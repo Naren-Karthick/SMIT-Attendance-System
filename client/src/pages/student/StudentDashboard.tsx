@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoSyncListener } from '../../context/SyncContext';
 import { AttendanceGauge } from '../../components/common/AttendanceGauge';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import {
@@ -25,27 +26,30 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      if (!user?.studentId) return;
-      try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch(`/api/students/${user.studentId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const result = await res.json();
-          setData(result);
-        }
-      } catch (err) {
-        console.error('Failed to load student dashboard:', err);
-      } finally {
-        setLoading(false);
+  const fetchDashboard = React.useCallback(async () => {
+    if (!user?.studentId) return;
+    try {
+      const token = localStorage.getItem('smit_token');
+      const res = await fetch(`/api/students/${user.studentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setData(result);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load student dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.studentId]);
 
+  useEffect(() => {
     fetchDashboard();
-  }, [user]);
+  }, [fetchDashboard]);
+
+  // Auto-sync every 30 seconds seamlessly
+  useAutoSyncListener(fetchDashboard);
 
   if (loading || !data) {
     return (

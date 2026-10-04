@@ -2,12 +2,33 @@ const express = require('express');
 const cors = require('cors');
 const path = require('node:path');
 const fs = require('node:fs');
-const { initSchema } = require('./db');
+const { initSchema, getDbPath } = require('./db');
 const { seedDatabase } = require('./seed');
+const { restoreDatabaseFromVercel, backupDatabaseToVercel } = require('./storage');
 
-// Initialize database schema and seed if not already present
-initSchema();
-seedDatabase();
+// Initialize database: restore snapshot from Vercel Blob if available, then ensure schema & seed
+(async () => {
+  try {
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      await restoreDatabaseFromVercel(getDbPath());
+    }
+  } catch (err) {
+    console.error('[Storage Init] Cloud restore notice:', err.message);
+  }
+  initSchema();
+  seedDatabase();
+})();
+
+// Periodic Cloud Auto-Sync: backup database state to Vercel Storage every 30 seconds
+if (process.env.BLOB_READ_WRITE_TOKEN) {
+  setInterval(async () => {
+    try {
+      await backupDatabaseToVercel(getDbPath());
+    } catch (e) {
+      // background periodic sync error logged in storage module
+    }
+  }, 30 * 1000);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +46,8 @@ app.get('/api/health', (req, res) => {
     institution: 'Sri Muthukumaran Institute of Technology',
     department: 'Information Technology',
     academicYear: '2026-2027',
+    storage: process.env.BLOB_READ_WRITE_TOKEN ? 'Vercel Blob Storage (Active)' : 'Local File Storage',
+    autoSyncIntervalSec: 30,
     time: new Date().toISOString()
   });
 });
@@ -43,6 +66,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/audit', require('./routes/audit'));
+app.use('/api/storage', require('./routes/storage'));
 
 // Serve Client in production
 const clientDistPath = path.resolve(__dirname, '../../client/dist');

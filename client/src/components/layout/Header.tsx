@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Bell, User, LogOut, ArrowRightLeft, Check, Sparkles, Building2, BookOpen, Menu } from 'lucide-react';
+import { useSync } from '../../context/SyncContext';
+import { Bell, User, LogOut, ArrowRightLeft, Check, Sparkles, Building2, BookOpen, Menu, RefreshCw, Cloud } from 'lucide-react';
 
 interface HeaderProps {
   onNavigate: (page: string) => void;
@@ -12,6 +13,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenMobileDrawer }) => {
   const { user, logout, switchUser, unreadCount, refreshMe } = useAuth();
   const { showToast } = useToast();
+  const { countdown, isSyncing, triggerSync, storageInfo } = useSync();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -129,6 +131,46 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
       </div>
 
       <div className="header-right">
+        {/* Vercel Cloud Storage & Auto-Sync Status Badge */}
+        <button
+          onClick={triggerSync}
+          disabled={isSyncing}
+          className="btn btn-sm auto-sync-badge"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: isSyncing ? '#eff6ff' : '#f0fdf4',
+            border: `1px solid ${isSyncing ? '#bfdbfe' : '#bbf7d0'}`,
+            color: isSyncing ? '#2563eb' : '#15803d',
+            fontWeight: 600,
+            fontSize: '0.76rem',
+            padding: '5px 10px',
+            borderRadius: 20
+          }}
+          title={`Cloud Storage: ${storageInfo?.provider || 'Vercel Blob Storage'}. Auto-syncs every 30s. Click to sync now. Next in ${countdown}s.`}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: isSyncing ? '#3b82f6' : '#22c55e',
+              display: 'inline-block',
+              animation: isSyncing ? 'pulseGlow 1s infinite' : 'none'
+            }}
+          />
+          <RefreshCw
+            size={12}
+            style={{
+              animation: isSyncing ? 'spin 1s linear infinite' : 'none'
+            }}
+          />
+          <span className="auto-sync-text">
+            {isSyncing ? 'Syncing...' : `Sync ${countdown}s`}
+          </span>
+        </button>
+
         {/* Fast Role / Demo User Switcher Button */}
         <div style={{ position: 'relative' }} ref={switcherRef}>
           <button

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { SyncProvider } from './context/SyncContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { ResponsiveMobileNav } from './components/layout/ResponsiveMobileNav';
@@ -211,7 +212,9 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <AppContent />
+        <SyncProvider>
+          <AppContent />
+        </SyncProvider>
       </ToastProvider>
     </AuthProvider>
   );

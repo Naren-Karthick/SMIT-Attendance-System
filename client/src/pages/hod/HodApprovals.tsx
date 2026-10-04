@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../../context/ToastContext';
+import { useAutoSyncListener } from '../../context/SyncContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EvidenceViewer } from '../../components/common/EvidenceViewer';
 import { Drawer } from '../../components/common/Drawer';
@@ -54,8 +55,7 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
   });
   const [processing, setProcessing] = useState(false);
 
-  const fetchQueue = async () => {
-    setLoading(true);
+  const fetchQueue = useCallback(async () => {
     try {
       const token = localStorage.getItem('smit_token');
       const endpoint = activeTab === 'od' ? '/api/od/all' : '/api/leave/all';
@@ -75,11 +75,14 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, statusFilter, yearFilter, search]);
 
   useEffect(() => {
     fetchQueue();
-  }, [activeTab, statusFilter, yearFilter, search]);
+  }, [fetchQueue]);
+
+  // Auto-sync requests every 30 seconds
+  useAutoSyncListener(fetchQueue);
 
   const handleActionClick = (action: 'APPROVE' | 'REJECT' | 'CLARIFY', req: any) => {
     setConfirmModal({

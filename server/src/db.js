@@ -299,7 +299,12 @@ function initSchema() {
   `);
 }
 
+function getDbPath() {
+  return DB_PATH;
+}
+
 module.exports = {
   getDb,
-  initSchema
+  initSchema,
+  getDbPath
 };
