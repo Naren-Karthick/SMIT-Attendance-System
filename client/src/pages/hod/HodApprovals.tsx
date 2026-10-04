@@ -233,107 +233,208 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
             description="No applications found under the selected category and filter status."
           />
         ) : (
-          <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Request ID</th>
-                  <th>Student Info</th>
-                  <th>Year / Batch</th>
-                  <th>{activeTab === 'od' ? 'Event & Venue' : 'Leave Type & Reason'}</th>
-                  <th>Dates & Periods</th>
-                  <th>Evidence</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map(req => {
-                  const hasEvidence = !!(req.evidence_url || req.document_url);
+          <>
+            {/* Desktop Table View */}
+            <div className="desktop-approvals-table table-container" style={{ border: 'none', borderRadius: 0 }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Request ID</th>
+                    <th>Student Info</th>
+                    <th>Year / Batch</th>
+                    <th>{activeTab === 'od' ? 'Event & Venue' : 'Leave Type & Reason'}</th>
+                    <th>Dates & Periods</th>
+                    <th>Evidence</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map(req => {
+                    const hasEvidence = !!(req.evidence_url || req.document_url);
 
-                  return (
-                    <tr key={req.id}>
-                      <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#1e3a8a', whiteSpace: 'nowrap' }}>
-                        {req.request_number}
-                      </td>
-                      <td>
-                        <strong style={{ color: '#0f172a' }}>{req.student_name}</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
-                          {req.register_number}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge" style={{ background: '#f8fafc', color: '#334155' }}>
-                          {req.year_level}nd/rd/th Year
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                          {activeTab === 'od' ? req.event_name : req.leave_type}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          {activeTab === 'od' ? `${req.od_type} • ${req.venue}` : req.reason}
-                        </div>
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ fontSize: '0.825rem', fontWeight: 600 }}>
-                          {req.from_date} {req.to_date !== req.from_date ? `to ${req.to_date}` : ''}
-                        </div>
-                        {activeTab === 'od' && (
-                          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                            Periods {req.from_period}–{req.to_period}
+                    return (
+                      <tr key={req.id}>
+                        <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#1e3a8a', whiteSpace: 'nowrap' }}>
+                          {req.request_number}
+                        </td>
+                        <td>
+                          <strong style={{ color: '#0f172a' }}>{req.student_name}</strong>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
+                            {req.register_number}
                           </div>
-                        )}
-                      </td>
-                      <td>
-                        {hasEvidence ? (
-                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle2 size={13} />
-                            <span>Attached</span>
+                        </td>
+                        <td>
+                          <span className="badge" style={{ background: '#f8fafc', color: '#334155' }}>
+                            {req.year_level}nd/rd/th Year
                           </span>
-                        ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Self-declared</span>
-                        )}
-                      </td>
-                      <td>
-                        <StatusBadge status={req.status} size="sm" />
-                      </td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button
-                          onClick={() => setSelectedRequest(req)}
-                          className="btn btn-primary btn-sm"
-                          style={{ marginRight: 6 }}
-                        >
-                          <Eye size={13} />
-                          <span>Inspect</span>
-                        </button>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                            {activeTab === 'od' ? req.event_name : req.leave_type}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            {activeTab === 'od' ? `${req.od_type} • ${req.venue}` : req.reason}
+                          </div>
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '0.825rem', fontWeight: 600 }}>
+                            {req.from_date} {req.to_date !== req.from_date ? `to ${req.to_date}` : ''}
+                          </div>
+                          {activeTab === 'od' && (
+                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                              Periods {req.from_period}–{req.to_period}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {hasEvidence ? (
+                            <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <CheckCircle2 size={13} />
+                              <span>Attached</span>
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Self-declared</span>
+                          )}
+                        </td>
+                        <td>
+                          <StatusBadge status={req.status} size="sm" />
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button
+                            onClick={() => setSelectedRequest(req)}
+                            className="btn btn-primary btn-sm"
+                            style={{ marginRight: 6 }}
+                          >
+                            <Eye size={13} />
+                            <span>Inspect</span>
+                          </button>
 
-                        {req.status === 'PENDING' && (
-                          <>
-                            <button
-                              onClick={() => handleActionClick('APPROVE', req)}
-                              className="btn btn-success btn-sm"
-                              style={{ marginRight: 6 }}
-                              title="Approve request"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleActionClick('REJECT', req)}
-                              className="btn btn-danger btn-sm"
-                              title="Reject request"
-                            >
-                              Reject
-                            </button>
-                          </>
+                          {req.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleActionClick('APPROVE', req)}
+                                className="btn btn-success btn-sm"
+                                style={{ marginRight: 6 }}
+                                title="Approve request"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleActionClick('REJECT', req)}
+                                className="btn btn-danger btn-sm"
+                                title="Reject request"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Touch-Friendly Card View */}
+            <div className="mobile-approvals-cards">
+              {requests.map(req => {
+                const hasEvidence = !!(req.evidence_url || req.document_url);
+                return (
+                  <div
+                    key={req.id}
+                    className="card"
+                    style={{
+                      padding: 14,
+                      borderRadius: 14,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      border: '1px solid #e2e8f0'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, fontFamily: 'monospace', color: '#1e3a8a' }}>
+                          {req.request_number}
+                        </span>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
+                          {req.student_name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
+                          {req.register_number} • Year {req.year_level} (Sem {req.semester})
+                        </div>
+                      </div>
+                      <StatusBadge status={req.status} size="sm" />
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: 8, margin: '8px 0', border: '1px solid #f1f5f9' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a' }}>
+                        {activeTab === 'od' ? req.event_name : req.leave_type}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#475569', marginTop: 2 }}>
+                        {activeTab === 'od' ? `${req.od_type} • ${req.venue}` : req.reason}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, fontSize: '0.75rem', color: '#64748b', flexWrap: 'wrap' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Calendar size={13} color="#2563eb" />
+                          <strong>{req.from_date}</strong> {req.to_date !== req.from_date ? `to ${req.to_date}` : ''}
+                        </span>
+                        {activeTab === 'od' && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Clock size={13} color="#2563eb" />
+                            <span>Periods {req.from_period}–{req.to_period}</span>
+                          </span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <span>
+                          {hasEvidence ? (
+                            <span style={{ color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <CheckCircle2 size={12} />
+                              Evidence Attached
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8' }}>Self-declared</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                      <button
+                        onClick={() => setSelectedRequest(req)}
+                        className="btn btn-outline btn-sm"
+                        style={{ flex: 1, minHeight: 38, justifyContent: 'center' }}
+                      >
+                        <Eye size={14} />
+                        <span>Inspect</span>
+                      </button>
+
+                      {req.status === 'PENDING' && (
+                        <>
+                          <button
+                            onClick={() => handleActionClick('APPROVE', req)}
+                            className="btn btn-success btn-sm"
+                            style={{ flex: 1.2, minHeight: 38, justifyContent: 'center' }}
+                          >
+                            <CheckCircle2 size={14} />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            onClick={() => handleActionClick('REJECT', req)}
+                            className="btn btn-danger btn-sm"
+                            style={{ flex: 1, minHeight: 38, justifyContent: 'center' }}
+                          >
+                            <XCircle size={14} />
+                            <span>Reject</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 

@@ -229,15 +229,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <span>My Classes</span>
               </button>
               <button
-                className={`drawer-link ${currentPage === 'faculty-take-attendance' ? 'active' : ''}`}
-                onClick={() => handleNavClick('faculty-take-attendance')}
+                className={`drawer-link ${currentPage === 'take-attendance' ? 'active' : ''}`}
+                onClick={() => handleNavClick('take-attendance')}
               >
                 <CheckSquare size={18} />
                 <span>Take Attendance</span>
               </button>
               <button
-                className={`drawer-link ${currentPage === 'faculty-history' ? 'active' : ''}`}
-                onClick={() => handleNavClick('faculty-history')}
+                className={`drawer-link ${currentPage === 'faculty-attendance-history' ? 'active' : ''}`}
+                onClick={() => handleNavClick('faculty-attendance-history')}
               >
                 <History size={18} />
                 <span>Attendance History</span>

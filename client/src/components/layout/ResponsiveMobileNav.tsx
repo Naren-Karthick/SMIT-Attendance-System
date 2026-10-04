@@ -94,8 +94,8 @@ export const ResponsiveMobileNav: React.FC<ResponsiveMobileNavProps> = ({
           </button>
 
           <button
-            className={`mobile-nav-item ${currentPage === 'faculty-take-attendance' ? 'active' : ''}`}
-            onClick={() => onNavigate('faculty-take-attendance')}
+            className={`mobile-nav-item ${currentPage === 'take-attendance' ? 'active' : ''}`}
+            onClick={() => onNavigate('take-attendance')}
           >
             <div className="mobile-nav-highlight">
               <CheckSquare size={18} />
@@ -104,8 +104,8 @@ export const ResponsiveMobileNav: React.FC<ResponsiveMobileNavProps> = ({
           </button>
 
           <button
-            className={`mobile-nav-item ${currentPage === 'faculty-history' ? 'active' : ''}`}
-            onClick={() => onNavigate('faculty-history')}
+            className={`mobile-nav-item ${currentPage === 'faculty-attendance-history' ? 'active' : ''}`}
+            onClick={() => onNavigate('faculty-attendance-history')}
           >
             <History size={20} />
             <span>History</span>

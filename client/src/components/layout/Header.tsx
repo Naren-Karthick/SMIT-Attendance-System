@@ -197,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 position: 'absolute',
                 top: '110%',
                 right: 0,
-                width: 310,
+                width: 'min(300px, calc(100vw - 24px))',
                 background: '#fff',
                 borderRadius: 12,
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
@@ -276,7 +276,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 position: 'absolute',
                 top: '110%',
                 right: 0,
-                width: 340,
+                width: 'min(340px, calc(100vw - 24px))',
                 background: '#fff',
                 borderRadius: 12,
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
@@ -378,7 +378,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
             >
               {user?.fullName?.charAt(0) || 'U'}
             </div>
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+            <div className="header-user-text" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.1 }}>
                 {user?.fullName?.split(' ')[0]}
               </span>
@@ -401,7 +401,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 position: 'absolute',
                 top: '110%',
                 right: 0,
-                width: 220,
+                width: 'min(220px, calc(100vw - 24px))',
                 background: '#fff',
                 borderRadius: 12,
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
