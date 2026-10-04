@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { safeApiFetch } from '../../utils/api';
 import { CalendarDays, Clock, MapPin, User, BookOpen } from 'lucide-react';
 
 export const StudentTimetable: React.FC = () => {
@@ -10,16 +11,10 @@ export const StudentTimetable: React.FC = () => {
   useEffect(() => {
     const fetchTimetable = async () => {
       try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch(`/api/timetables?batch_id=${user?.batchId || 1}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTimetableData(data);
-        }
+        const data = await safeApiFetch(`/api/timetables?batch_id=${user?.batchId || 1}`);
+        setTimetableData(data);
       } catch (err) {
-        console.error(err);
+        console.warn('Failed to load timetable:', err);
       } finally {
         setLoading(false);
       }

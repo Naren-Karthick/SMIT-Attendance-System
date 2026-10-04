@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { safeApiFetch } from '../../utils/api';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { CalendarCheck, Calendar, Clock, Send } from 'lucide-react';
@@ -15,16 +16,10 @@ export const StudentLeaveRequests: React.FC<StudentLeaveRequestsProps> = ({ onNa
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch('/api/leave/my-requests', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setRequests(data.requests);
-        }
+        const data = await safeApiFetch<{ requests: any[] }>('/api/leave/my-requests');
+        setRequests(data.requests || []);
       } catch (e) {
-        console.error(e);
+        console.warn('Failed to load leave requests:', e);
       } finally {
         setLoading(false);
       }

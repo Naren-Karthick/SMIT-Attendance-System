@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { safeApiFetch } from '../../utils/api';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EvidenceViewer } from '../../components/common/EvidenceViewer';
 import { Drawer } from '../../components/common/Drawer';
@@ -30,16 +31,10 @@ export const StudentODRequests: React.FC<StudentODRequestsProps> = ({ onNavigate
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch('/api/od/my-requests', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setRequests(data.requests);
-        }
+        const data = await safeApiFetch<{ requests: any[] }>('/api/od/my-requests');
+        setRequests(data.requests || []);
       } catch (err) {
-        console.error(err);
+        console.warn('Failed to load OD requests:', err);
       } finally {
         setLoading(false);
       }

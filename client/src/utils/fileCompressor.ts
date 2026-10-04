@@ -86,12 +86,24 @@ export async function compressEvidenceFile(
 }
 
 /**
- * Safely parse fetch response preventing "Unexpected token 'R' in JSON" errors
+ * Safely parse fetch response preventing "Unexpected token '<', '<!DOCTYPE'" and "Unexpected token 'R'" errors
  */
 export async function parseApiResponse(res: Response): Promise<any> {
   const text = await res.text();
-  let data: any = null;
+  const trimmed = text.trim();
 
+  // If server returned an HTML error page (e.g. 504 timeout, 500 error, 404 rewrite)
+  if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<?xml') || trimmed.startsWith('<!doctype')) {
+    if (res.status === 504 || trimmed.includes('504 Gateway Time-out') || trimmed.includes('FUNCTION_INVOCATION_TIMEOUT')) {
+      throw new Error('Cloud server timed out while processing your request. Please try again with a compressed image.');
+    }
+    if (res.status === 413 || trimmed.includes('Request Entity Too Large')) {
+      throw new Error('Attachment file is too large for the cloud server (exceeds limit). Please upload a compressed photo or smaller document.');
+    }
+    throw new Error(`Server returned an HTML error page (HTTP ${res.status}). The service may be starting up or the route was unavailable.`);
+  }
+
+  let data: any = null;
   try {
     data = JSON.parse(text);
   } catch {
@@ -100,11 +112,11 @@ export async function parseApiResponse(res: Response): Promise<any> {
         'Attachment file is too large for the cloud server (exceeds 4.5MB limit). Please upload a compressed photo or smaller document.'
       );
     }
-    throw new Error(text.slice(0, 150) || `Server error (HTTP ${res.status})`);
+    throw new Error(`Failed to parse server response (HTTP ${res.status}): ${text.slice(0, 100)}`);
   }
 
   if (!res.ok) {
-    throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+    throw new Error(data?.error || data?.message || `Request failed with status ${res.status}`);
   }
 
   return data;

@@ -1,9 +1,9 @@
 const express = require('express');
-const { getDb } = require('../db');
+const { getDb, getDbPath } = require('../db');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { logAudit, sendNotification } = require('../utils/auditLogger');
 const { getPolicy } = require('../attendanceEngine');
-const { uploadEvidenceToVercel, markDatabaseDirty } = require('../storage');
+const { uploadEvidenceToVercel, markDatabaseDirty, backupDatabaseToVercel } = require('../storage');
 
 const router = express.Router();
 
@@ -97,6 +97,15 @@ router.post('/apply', authenticateToken, async (req, res) => {
       type: 'request',
       linkUrl: '/hod/approvals?tab=leave'
     });
+  }
+
+  // Persist snapshot to Vercel Blob storage
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      await backupDatabaseToVercel(getDbPath());
+    } catch (e) {
+      console.error('[Leave Submission] Cloud backup notice:', e.message);
+    }
   }
 
   res.status(201).json({

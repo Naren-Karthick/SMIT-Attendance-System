@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { safeApiFetch } from '../../utils/api';
 import { AttendanceGauge } from '../../components/common/AttendanceGauge';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -17,16 +18,10 @@ export const StudentAttendance: React.FC = () => {
     const fetchAttendance = async () => {
       if (!user?.studentId) return;
       try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch(`/api/students/${user.studentId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const result = await res.json();
-          setData(result);
-        }
+        const result = await safeApiFetch(`/api/students/${user.studentId}`);
+        setData(result);
       } catch (err) {
-        console.error(err);
+        console.warn('Failed to load attendance:', err);
       } finally {
         setLoading(false);
       }

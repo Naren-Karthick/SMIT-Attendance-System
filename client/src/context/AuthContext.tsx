@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { safeApiFetch } from '../utils/api';
 
 export interface User {
   id: number;
@@ -46,20 +47,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const res = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${currentToken}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        setUnreadCount(data.unreadNotifications || 0);
-      } else {
+      const data = await safeApiFetch<{ user: User; unreadNotifications?: number }>('/api/auth/me');
+      setUser(data.user);
+      setUnreadCount(data.unreadNotifications || 0);
+    } catch (err) {
+      console.warn('Session verification notice:', err);
+      // Only clear token if server explicitly rejected auth
+      if ((err as Error).message?.includes('401') || (err as Error).message?.includes('403')) {
         localStorage.removeItem('smit_token');
         setToken(null);
         setUser(null);
       }
-    } catch (err) {
-      console.error('Failed to restore session:', err);
     } finally {
       setLoading(false);
     }
@@ -70,16 +68,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshMe]);
 
   const login = async (identifier: string, password: string, role?: string): Promise<User> => {
-    const res = await fetch('/api/auth/login', {
+    const data = await safeApiFetch<{ user: User; token: string }>('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, password, role })
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to sign in');
-    }
 
     localStorage.setItem('smit_token', data.token);
     setToken(data.token);

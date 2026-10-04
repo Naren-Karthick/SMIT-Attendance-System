@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSyncListener } from '../../context/SyncContext';
+import { safeApiFetch } from '../../utils/api';
 import { AttendanceGauge } from '../../components/common/AttendanceGauge';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import {
@@ -29,16 +30,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
   const fetchDashboard = React.useCallback(async () => {
     if (!user?.studentId) return;
     try {
-      const token = localStorage.getItem('smit_token');
-      const res = await fetch(`/api/students/${user.studentId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const result = await res.json();
-        setData(result);
-      }
+      const result = await safeApiFetch(`/api/students/${user.studentId}`);
+      setData(result);
     } catch (err) {
-      console.error('Failed to load student dashboard:', err);
+      console.warn('Failed to load student dashboard:', err);
     } finally {
       setLoading(false);
     }

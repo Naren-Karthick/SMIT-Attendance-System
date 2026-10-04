@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { safeApiFetch } from '../utils/api';
 
 interface StorageInfo {
   provider: string;
@@ -37,10 +38,7 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem('smit_token');
 
       // 1. Fetch live storage status & ping API
-      const statusPromise = fetch('/api/storage/status', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
-        .then(r => r.ok ? r.json() : null)
+      const statusPromise = safeApiFetch<StorageInfo>('/api/storage/status')
         .then(data => {
           if (data) setStorageInfo(data);
         })
