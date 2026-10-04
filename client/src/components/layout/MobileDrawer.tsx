@@ -66,28 +66,21 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         {/* Drawer Header */}
         <div className="mobile-drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
+            <img
+              src="/smit-logo.png"
+              alt="Sri Muthukumaran Institute of Technology"
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '1rem',
-                boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
+                width: 42,
+                height: 42,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 5px rgba(66, 8, 14, 0.3))'
               }}
-            >
-              SMIT
-            </div>
+            />
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', lineHeight: 1.2 }}>
                 SMIT Smart Attendance
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--primary-700)', fontWeight: 600 }}>
                 IT Dept • AY 2026–2027
               </div>
             </div>
@@ -121,7 +114,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 width: 40,
                 height: 40,
                 borderRadius: '50%',
-                background: role === 'hod' ? '#7c3aed' : (role === 'faculty' ? '#059669' : '#2563eb'),
+                background: role === 'hod' ? '#800d18' : (role === 'faculty' ? '#b45309' : '#991421'),
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',

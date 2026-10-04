@@ -79,7 +79,7 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onNavigate }) => {
       <div
         className="card"
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)',
+          background: 'linear-gradient(135deg, #3b060b 0%, #6b0c15 50%, #800d18 100%)',
           color: '#ffffff',
           padding: '24px 28px',
           marginBottom: '24px',
@@ -92,7 +92,7 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onNavigate }) => {
               <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.15)' }}>
                 Department Control Center
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>AY 2026–2027 (Odd Semester)</span>
+              <span style={{ fontSize: '0.75rem', color: '#fde68a' }}>AY 2026–2027 (Odd Semester)</span>
             </div>
             <h1 style={{ color: '#fff', fontSize: '1.65rem', fontWeight: 800, margin: 0 }}>
               {user?.fullName || 'Dr. S. Anitha'}
@@ -106,7 +106,7 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onNavigate }) => {
             <button
               onClick={() => onNavigate('hod-od-approvals')}
               className="btn btn-primary"
-              style={{ background: '#2563eb' }}
+              style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', borderColor: '#d97706', color: '#fff', fontWeight: 600 }}
             >
               <FileCheck size={16} />
               <span>Pending Approvals ({kpis.pendingODs + kpis.pendingLeaves})</span>

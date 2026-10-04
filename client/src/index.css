@@ -5,15 +5,28 @@
    ========================================================================== */
 
 :root {
-  /* Color Palette - Navy / Blue Primary + Neutral Surfaces */
-  --primary-900: #0f172a;
-  --primary-800: #1e293b;
-  --primary-700: #1e3a8a; /* Deep Navy */
-  --primary-600: #2563eb; /* Primary Blue */
-  --primary-500: #3b82f6;
-  --primary-400: #60a5fa;
-  --primary-100: #dbeafe;
-  --primary-50:  #eff6ff;
+  /* Official SMIT Crest Theme - Royal Maroon / Crimson + Gold Amber Ribbon */
+  --primary-950: #220306;
+  --primary-900: #3b060b; /* Deep Royal Wine - Sidebar background */
+  --primary-850: #500810;
+  --primary-800: #6b0c15; /* Deep Shield Maroon */
+  --primary-700: #800d18; /* Signature SMIT Shield Crimson */
+  --primary-600: #991421; /* Vibrant Shield Crimson */
+  --primary-500: #b91c1c; /* Crimson Accent */
+  --primary-400: #dc2626;
+  --primary-300: #f87171;
+  --primary-200: #fecaca;
+  --primary-100: #fee2e2;
+  --primary-50:  #fff1f2; /* Softest Rose Blush Tint */
+
+  /* SMIT Golden Ribbon Accent */
+  --accent-gold-800: #92400e;
+  --accent-gold-700: #b45309;
+  --accent-gold-600: #d97706; /* SMIT Banner Gold */
+  --accent-gold-500: #f59e0b; /* Sunburst Amber */
+  --accent-gold-400: #fbbf24;
+  --accent-gold-100: #fef3c7;
+  --accent-gold-50:  #fffbeb;
 
   --neutral-900: #0f172a;
   --neutral-800: #1e293b;
@@ -192,18 +205,30 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
   min-width: 0;
 }
 
+.header-logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(66, 8, 14, 0.25));
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+.header-logo-img:hover {
+  transform: scale(1.05);
+}
+
 .header-logo-badge {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, #800d18, #d97706);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 0.95rem;
-  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.3);
+  box-shadow: 0 2px 6px rgba(128, 13, 24, 0.35);
   flex-shrink: 0;
 }
 
@@ -281,18 +306,18 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background-color: var(--primary-900);
+  background: linear-gradient(180deg, #3b060b 0%, #220306 100%);
   color: var(--surface-white);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  border-right: 1px solid var(--neutral-800);
+  border-right: 1px solid rgba(217, 119, 6, 0.2);
   transition: width var(--transition-normal);
 }
 
 .sidebar-header {
   padding: var(--space-5) var(--space-5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -309,10 +334,11 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
 
 .nav-section-title {
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--neutral-400);
+  letter-spacing: 0.06em;
+  color: #fde68a;
+  opacity: 0.8;
   padding: var(--space-3) var(--space-3) var(--space-1);
 }
 
@@ -324,7 +350,7 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--neutral-300);
+  color: #fecdd3;
   text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -335,15 +361,16 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
 }
 
 .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--surface-white);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .nav-link.active {
-  background-color: var(--primary-600);
+  background: linear-gradient(135deg, #800d18 0%, #a21422 100%);
   color: var(--surface-white);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 2px 6px rgba(128, 13, 24, 0.45);
+  border-left: 3px solid #d97706;
 }
 
 /* Card Component */
@@ -460,13 +487,15 @@ h4, .h4 { font-size: 0.95rem; font-weight: 600; color: var(--neutral-800); }
 }
 
 .btn-primary {
-  background-color: var(--primary-700);
+  background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
   color: var(--surface-white);
   border-color: var(--primary-700);
+  box-shadow: 0 1px 3px rgba(128, 13, 24, 0.3);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-800);
+  background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-900) 100%);
   border-color: var(--primary-800);
+  box-shadow: 0 3px 8px rgba(128, 13, 24, 0.45);
 }
 
 .btn-secondary {
@@ -1082,7 +1111,7 @@ button, input, select, textarea, a {
 }
 
 .mobile-nav-item.active {
-  color: var(--primary-600);
+  color: var(--primary-700);
   font-weight: 700;
 }
 
@@ -1090,29 +1119,29 @@ button, input, select, textarea, a {
   content: '';
   position: absolute;
   top: 1px;
-  width: 16px;
+  width: 18px;
   height: 3px;
   border-radius: 999px;
-  background: var(--primary-600);
+  background: linear-gradient(90deg, #800d18, #d97706);
 }
 
 .mobile-nav-highlight {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, #800d18, #d97706);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-top: -14px;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 14px rgba(128, 13, 24, 0.45);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .mobile-nav-highlight:active {
   transform: scale(0.9);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(128, 13, 24, 0.35);
 }
 
 /* Desktop vs Mobile Toggle Selectors */
@@ -1273,6 +1302,12 @@ button, input, select, textarea, a {
     min-width: 0 !important;
     overflow: hidden !important;
     flex: 1 1 auto !important;
+  }
+
+  .header-logo-img {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
   }
 
   .header-logo-badge {

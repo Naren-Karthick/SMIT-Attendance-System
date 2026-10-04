@@ -64,7 +64,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
       <div
         className="card"
         style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%)',
+          background: 'linear-gradient(135deg, #3b060b 0%, #6b0c15 50%, #800d18 100%)',
           color: '#ffffff',
           padding: '24px 28px',
           marginBottom: '24px',
@@ -79,7 +79,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
               <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.15)' }}>
                 {student.year_level === 2 ? '2nd' : (student.year_level === 3 ? '3rd' : '4th')} Year • Sem {student.semester}
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>Batch {student.batch_name}</span>
+              <span style={{ fontSize: '0.75rem', color: '#fde68a' }}>Batch {student.batch_name}</span>
             </div>
             <h1 style={{ color: '#fff', fontSize: '1.6rem', fontWeight: 700, margin: 0 }}>
               {student.full_name}
@@ -93,7 +93,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
             <button
               onClick={() => onNavigate('student-apply-od')}
               className="btn btn-primary"
-              style={{ background: '#2563eb', borderColor: '#3b82f6' }}
+              style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', borderColor: '#d97706', color: '#fff', fontWeight: 600 }}
             >
               <Send size={15} />
               <span>Apply OD</span>

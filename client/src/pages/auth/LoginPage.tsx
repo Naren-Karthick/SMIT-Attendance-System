@@ -63,7 +63,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%)',
+        background: 'linear-gradient(135deg, #220306 0%, #3b060b 45%, #610a12 75%, #b45309 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -71,41 +71,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       }}
     >
       <div style={{ maxWidth: 480, width: '100%' }}>
-        {/* Institutional Header Banner */}
+        {/* Institutional Header Banner with Official SMIT Crest */}
         <div style={{ textAlign: 'center', marginBottom: 28, color: '#fff' }}>
-          <div
+          <img
+            src="/smit-logo.png"
+            alt="Sri Muthukumaran Institute of Technology"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 58,
-              height: 58,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
-              boxShadow: '0 8px 20px rgba(37, 99, 235, 0.4)',
-              marginBottom: 14
+              width: 92,
+              height: 92,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55))',
+              marginBottom: 12
             }}
-          >
-            <GraduationCap size={32} color="#fff" />
-          </div>
+          />
 
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff' }}>
             SMIT Smart Attendance
           </h1>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: 4 }}>
+          <p style={{ fontSize: '0.9rem', color: '#fed7aa', marginTop: 4, fontWeight: 500 }}>
             Sri Muthukumaran Institute of Technology
           </p>
           <div
             style={{
               display: 'inline-block',
-              marginTop: 6,
-              padding: '3px 12px',
+              marginTop: 8,
+              padding: '4px 14px',
               borderRadius: 999,
-              background: 'rgba(255, 255, 255, 0.1)',
+              background: 'rgba(217, 119, 6, 0.2)',
+              border: '1px solid rgba(251, 191, 36, 0.4)',
               backdropFilter: 'blur(4px)',
               fontSize: '0.75rem',
               fontWeight: 600,
-              color: '#60a5fa'
+              color: '#fef3c7'
             }}
           >
             Information Technology • Academic Year 2026–2027
@@ -149,7 +146,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 fontSize: '0.8125rem',
                 transition: 'all 150ms',
                 background: selectedRole === 'student' ? '#ffffff' : 'transparent',
-                color: selectedRole === 'student' ? '#1e3a8a' : '#64748b',
+                color: selectedRole === 'student' ? 'var(--primary-700)' : '#64748b',
                 boxShadow: selectedRole === 'student' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
               }}
             >
@@ -173,7 +170,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 fontSize: '0.8125rem',
                 transition: 'all 150ms',
                 background: selectedRole === 'faculty' ? '#ffffff' : 'transparent',
-                color: selectedRole === 'faculty' ? '#1e3a8a' : '#64748b',
+                color: selectedRole === 'faculty' ? 'var(--primary-700)' : '#64748b',
                 boxShadow: selectedRole === 'faculty' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
               }}
             >
@@ -197,7 +194,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 fontSize: '0.8125rem',
                 transition: 'all 150ms',
                 background: selectedRole === 'hod' ? '#ffffff' : 'transparent',
-                color: selectedRole === 'hod' ? '#1e3a8a' : '#64748b',
+                color: selectedRole === 'hod' ? 'var(--primary-700)' : '#64748b',
                 boxShadow: selectedRole === 'hod' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
               }}
             >
@@ -301,7 +298,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 gap: 5
               }}
             >
-              <Sparkles size={12} color="#2563eb" />
+              <Sparkles size={12} color="var(--primary-700)" />
               <span>1-Click Demo Fast Logins</span>
             </div>
 
@@ -319,9 +316,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   style={{
                     fontSize: '0.725rem',
                     padding: '4px 8px',
-                    borderColor: '#cbd5e1',
-                    background: identifier === ql.id ? '#eff6ff' : '#ffffff',
-                    color: identifier === ql.id ? '#1d4ed8' : '#334155'
+                    borderColor: identifier === ql.id ? 'var(--primary-700)' : '#cbd5e1',
+                    background: identifier === ql.id ? 'var(--primary-50)' : '#ffffff',
+                    color: identifier === ql.id ? 'var(--primary-700)' : '#334155',
+                    fontWeight: identifier === ql.id ? 700 : 500
                   }}
                 >
                   {ql.label}

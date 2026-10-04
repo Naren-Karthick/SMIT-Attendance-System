@@ -96,9 +96,11 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
           </button>
         )}
         <div className="header-brand-container">
-          <div className="header-logo-badge">
-            SMIT
-          </div>
+          <img
+            src="/smit-logo.png"
+            alt="Sri Muthukumaran Institute of Technology"
+            className="header-logo-img"
+          />
           <div className="header-brand-text">
             <div className="header-title-full">
               Sri Muthukumaran Institute of Technology
@@ -109,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
             <div className="header-subtitle-desktop">
               <span>Department of IT</span>
               <span>•</span>
-              <span style={{ fontWeight: 600, color: '#1e3a8a' }}>AY 2026–2027</span>
+              <span style={{ fontWeight: 600, color: 'var(--primary-700)' }}>AY 2026–2027</span>
             </div>
           </div>
         </div>
@@ -156,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
               gap: 6,
               background: '#f8fafc',
               borderColor: '#cbd5e1',
-              color: '#1e3a8a',
+              color: 'var(--primary-700)',
               fontWeight: 600
             }}
             title="Switch demo user account instantly"
@@ -196,8 +198,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                         justifyContent: 'space-between',
                         padding: '8px 10px',
                         borderRadius: 6,
-                        border: isCurrent ? '1px solid #2563eb' : '1px solid transparent',
-                        background: isCurrent ? '#eff6ff' : 'transparent',
+                        border: isCurrent ? '1px solid var(--primary-700)' : '1px solid transparent',
+                        background: isCurrent ? 'var(--primary-50)' : 'transparent',
                         textAlign: 'left',
                         cursor: 'pointer',
                         transition: 'background 150ms'
@@ -211,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                           {acc.title} ({acc.role.toUpperCase()})
                         </div>
                       </div>
-                      {isCurrent && <Check size={14} color="#2563eb" />}
+                      {isCurrent && <Check size={14} color="var(--primary-700)" />}
                     </button>
                   );
                 })}
@@ -335,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: user?.role === 'hod' ? '#1e3a8a' : (user?.role === 'faculty' ? '#047857' : '#2563eb'),
+                background: user?.role === 'hod' ? '#800d18' : (user?.role === 'faculty' ? '#b45309' : '#991421'),
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
@@ -355,7 +357,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                   fontSize: '0.6875rem',
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  color: user?.role === 'hod' ? '#1e3a8a' : (user?.role === 'faculty' ? '#047857' : '#2563eb')
+                  color: user?.role === 'hod' ? '#800d18' : (user?.role === 'faculty' ? '#b45309' : '#991421')
                 }}
               >
                 {user?.role}
@@ -407,19 +409,19 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                           justifyContent: 'space-between',
                           padding: '6px 8px',
                           borderRadius: 6,
-                          border: isCurrent ? '1px solid #2563eb' : '1px solid transparent',
-                          background: isCurrent ? '#eff6ff' : 'transparent',
+                          border: isCurrent ? '1px solid var(--primary-700)' : '1px solid transparent',
+                          background: isCurrent ? 'var(--primary-50)' : 'transparent',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: '0.75rem',
-                          color: isCurrent ? '#1d4ed8' : '#334155'
+                          color: isCurrent ? 'var(--primary-700)' : '#334155'
                         }}
                       >
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: 600 }}>{acc.name}</span>
                           <span style={{ color: '#64748b', marginLeft: 4, fontSize: '0.7rem' }}>({acc.role})</span>
                         </div>
-                        {isCurrent && <Check size={12} color="#2563eb" style={{ flexShrink: 0 }} />}
+                        {isCurrent && <Check size={12} color="var(--primary-700)" style={{ flexShrink: 0 }} />}
                       </button>
                     );
                   })}

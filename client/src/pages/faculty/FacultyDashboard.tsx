@@ -68,7 +68,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
       <div
         className="card"
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)',
+          background: 'linear-gradient(135deg, #3b060b 0%, #6b0c15 50%, #800d18 100%)',
           color: '#ffffff',
           padding: '24px 28px',
           marginBottom: '24px',
@@ -81,7 +81,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
               <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.15)' }}>
                 {dayOfWeek} • {todayDate}
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#93c5fd' }}>
+              <span style={{ fontSize: '0.75rem', color: '#fde68a' }}>
                 {user?.designation || 'Faculty Member'}
               </span>
             </div>
@@ -96,7 +96,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
           <button
             onClick={() => onNavigate('take-attendance')}
             className="btn btn-primary"
-            style={{ background: '#2563eb', padding: '12px 20px', fontSize: '0.95rem' }}
+            style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', borderColor: '#d97706', color: '#fff', fontWeight: 600, padding: '12px 20px', fontSize: '0.95rem' }}
           >
             <CheckSquare size={18} />
             <span>Fast Attendance Portal</span>
@@ -106,7 +106,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
 
       {/* Progress & KPI Strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <div className="card" style={{ padding: 18, borderLeft: '4px solid #2563eb' }}>
+        <div className="card" style={{ padding: 18, borderLeft: '4px solid var(--primary-700)' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TODAY'S CLASSES</div>
           <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
             {totalClassesToday}
