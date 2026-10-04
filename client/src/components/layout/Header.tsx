@@ -95,33 +95,18 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
             <Menu size={20} />
           </button>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              boxShadow: '0 2px 6px rgba(30, 58, 138, 0.3)',
-              flexShrink: 0
-            }}
-          >
+        <div className="header-brand-container">
+          <div className="header-logo-badge">
             SMIT
           </div>
           <div className="header-brand-text">
-            <div className="header-title-full" style={{ fontSize: '0.925rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+            <div className="header-title-full">
               Sri Muthukumaran Institute of Technology
             </div>
-            <div className="header-title-short" style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
-              SMIT Smart Attendance
+            <div className="header-title-short">
+              SMIT Attendance
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="header-subtitle-desktop">
               <span>Department of IT</span>
               <span>•</span>
               <span style={{ fontWeight: 600, color: '#1e3a8a' }}>AY 2026–2027</span>
@@ -136,21 +121,10 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
           onClick={triggerSync}
           disabled={isSyncing}
           className="btn btn-sm auto-sync-badge"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: isSyncing ? '#eff6ff' : '#f0fdf4',
-            border: `1px solid ${isSyncing ? '#bfdbfe' : '#bbf7d0'}`,
-            color: isSyncing ? '#2563eb' : '#15803d',
-            fontWeight: 600,
-            fontSize: '0.76rem',
-            padding: '5px 10px',
-            borderRadius: 20
-          }}
           title={`Cloud Storage: ${storageInfo?.provider || 'Vercel Blob Storage'}. Auto-syncs every 30s. Click to sync now. Next in ${countdown}s.`}
         >
           <span
+            className="sync-pulse-dot"
             style={{
               width: 7,
               height: 7,
@@ -161,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
             }}
           />
           <RefreshCw
-            size={12}
+            size={13}
             style={{
               animation: isSyncing ? 'spin 1s linear infinite' : 'none'
             }}
@@ -172,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
         </button>
 
         {/* Fast Role / Demo User Switcher Button */}
-        <div style={{ position: 'relative' }} ref={switcherRef}>
+        <div className="header-role-switcher-wrap" style={{ position: 'relative' }} ref={switcherRef}>
           <button
             onClick={() => setSwitcherOpen(!switcherOpen)}
             className="btn btn-outline btn-sm role-switcher-btn"
@@ -250,21 +224,22 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button
             onClick={handleOpenNotif}
-            className="btn-icon"
+            className="btn-icon header-notif-btn"
             style={{ position: 'relative' }}
             aria-label="Notifications"
           >
-            <Bell size={19} />
+            <Bell size={18} />
             {unreadCount > 0 && (
               <span
                 style={{
                   position: 'absolute',
-                  top: 4,
-                  right: 4,
+                  top: 3,
+                  right: 3,
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  background: '#ef4444'
+                  background: '#ef4444',
+                  border: '1.5px solid #fff'
                 }}
               />
             )}
@@ -351,18 +326,11 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
         <div style={{ position: 'relative' }} ref={profileRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '4px 10px',
-              borderRadius: 20,
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
-              cursor: 'pointer'
-            }}
+            className="header-profile-btn"
+            aria-label="User menu"
           >
             <div
+              className="header-profile-avatar"
               style={{
                 width: 28,
                 height: 28,
@@ -401,7 +369,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 position: 'absolute',
                 top: '110%',
                 right: 0,
-                width: 'min(220px, calc(100vw - 24px))',
+                width: 'min(240px, calc(100vw - 24px))',
                 background: '#fff',
                 borderRadius: 12,
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
@@ -414,6 +382,47 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 <div style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a' }}>{user?.fullName}</div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                   {user?.role === 'student' ? user?.registerNumber : user?.email}
+                </div>
+              </div>
+
+              {/* Mobile-only quick demo switcher inside profile dropdown */}
+              <div className="mobile-only-quick-switch" style={{ padding: '6px 4px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 4, paddingLeft: 6 }}>
+                  Switch Demo Account
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {demoAccounts.map(acc => {
+                    const isCurrent = user?.username === acc.id || user?.registerNumber === acc.id;
+                    return (
+                      <button
+                        key={acc.id}
+                        onClick={() => {
+                          setProfileOpen(false);
+                          handleQuickSwitch(acc.id, acc.name, acc.role);
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 8px',
+                          borderRadius: 6,
+                          border: isCurrent ? '1px solid #2563eb' : '1px solid transparent',
+                          background: isCurrent ? '#eff6ff' : 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          color: isCurrent ? '#1d4ed8' : '#334155'
+                        }}
+                      >
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600 }}>{acc.name}</span>
+                          <span style={{ color: '#64748b', marginLeft: 4, fontSize: '0.7rem' }}>({acc.role})</span>
+                        </div>
+                        {isCurrent && <Check size={12} color="#2563eb" style={{ flexShrink: 0 }} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
