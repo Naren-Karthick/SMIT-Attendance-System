@@ -6,8 +6,7 @@ const { initSchema, getDbPath, getDb } = require('./db');
 const { seedDatabase } = require('./seed');
 const { restoreDatabaseFromVercel, backupDatabaseToVercel } = require('./storage');
 
-// Immediately ensure SQLite tables exist synchronously
-initSchema();
+// Note: initSchema will run inside ensureDbReady after cloud snapshot restore
 
 // Promise to ensure remote cloud snapshot restore and seeding complete before requests run
 let dbReadyPromise = null;

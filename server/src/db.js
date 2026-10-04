@@ -32,6 +32,17 @@ function checkpointDb() {
   }
 }
 
+function closeDb() {
+  if (dbInstance) {
+    try {
+      dbInstance.close();
+    } catch (e) {
+      // Ignore close errors
+    }
+    dbInstance = null;
+  }
+}
+
 function initSchema() {
   const db = getDb();
 
@@ -322,5 +333,6 @@ module.exports = {
   getDb,
   initSchema,
   getDbPath,
-  checkpointDb
+  checkpointDb,
+  closeDb
 };

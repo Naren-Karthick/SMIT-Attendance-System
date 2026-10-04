@@ -137,6 +137,14 @@ async function restoreDatabaseFromVercel(targetPath) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
+    // Close existing database instance if open, so SQLite reloads from the new file
+    try {
+      const { closeDb } = require('./db');
+      closeDb();
+    } catch (e) {
+      // Ignore
+    }
+
     fs.writeFileSync(targetPath, buffer);
     lastBackupTime = dbBlob.uploadedAt ? new Date(dbBlob.uploadedAt).toISOString() : new Date().toISOString();
     console.log(`[Vercel Storage] Database successfully restored from Vercel Blob (${buffer.length} bytes)`);
