@@ -6,18 +6,33 @@ const { initSchema, getDbPath } = require('./db');
 const { seedDatabase } = require('./seed');
 const { restoreDatabaseFromVercel, backupDatabaseToVercel } = require('./storage');
 
-// Initialize database: restore snapshot from Vercel Blob if available, then ensure schema & seed
-(async () => {
-  try {
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      await restoreDatabaseFromVercel(getDbPath());
-    }
-  } catch (err) {
-    console.error('[Storage Init] Cloud restore notice:', err.message);
+// Immediately ensure SQLite tables exist synchronously
+initSchema();
+
+// Promise to ensure remote cloud snapshot restore and seeding complete before requests run
+let dbReadyPromise = null;
+async function ensureDbReady() {
+  if (!dbReadyPromise) {
+    dbReadyPromise = (async () => {
+      try {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+          const restored = await restoreDatabaseFromVercel(getDbPath());
+          if (restored) {
+            initSchema();
+          }
+        }
+      } catch (err) {
+        console.error('[Storage Init] Cloud restore notice:', err.message);
+      }
+      initSchema();
+      seedDatabase();
+    })();
   }
-  initSchema();
-  seedDatabase();
-})();
+  return dbReadyPromise;
+}
+
+// Start initialization in background
+ensureDbReady();
 
 // Periodic Cloud Auto-Sync: backup database state to Vercel Storage every 30 seconds
 if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -37,6 +52,16 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Ensure database is 100% ready before any route runs
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbReady();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -81,6 +106,17 @@ app.use((req, res) => {
     return res.sendFile(indexPath);
   }
   res.status(200).send('SMIT Smart Attendance API Server is active.');
+});
+
+// Global JSON Error Handler - Ensures JSON is returned on any error instead of HTML
+app.use((err, req, res, next) => {
+  console.error('[API Error Handler]', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error'
+  });
 });
 
 // Start Server

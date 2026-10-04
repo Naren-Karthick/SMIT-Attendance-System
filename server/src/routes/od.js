@@ -3,11 +3,12 @@ const { getDb } = require('../db');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { logAudit, sendNotification } = require('../utils/auditLogger');
 const { getPolicy } = require('../attendanceEngine');
+const { uploadEvidenceToVercel, markDatabaseDirty } = require('../storage');
 
 const router = express.Router();
 
 // 1. Submit OD Request (Student)
-router.post('/apply', authenticateToken, (req, res) => {
+router.post('/apply', authenticateToken, async (req, res) => {
   // Only students can apply for their own OD
   if (req.user.role !== 'student') {
     return res.status(403).json({ error: 'Only registered students can apply for OD.' });
@@ -73,6 +74,20 @@ router.post('/apply', authenticateToken, (req, res) => {
   const seqNum = String(countRow.count + 1).padStart(4, '0');
   const requestNumber = `OD-${currentYear}-${seqNum}`;
 
+  // Upload evidence to Vercel Blob storage if provided
+  let finalEvidenceUrl = evidence_base64 || null;
+  if (evidence_base64) {
+    try {
+      const buffer = Buffer.from(evidence_base64.replace(/^data:.*?;base64,/, ''), 'base64');
+      const blobUrl = await uploadEvidenceToVercel(buffer, evidence_name || 'evidence.jpg', evidence_type || 'image/jpeg');
+      if (blobUrl) {
+        finalEvidenceUrl = blobUrl;
+      }
+    } catch (e) {
+      console.error('[OD Upload] Vercel Blob upload notice:', e.message);
+    }
+  }
+
   db.prepare(`
     INSERT INTO od_requests (
       request_number, student_id, od_type, event_name, venue, from_date, to_date,
@@ -91,11 +106,13 @@ router.post('/apply', authenticateToken, (req, res) => {
     to_period,
     description,
     remarks || null,
-    evidence_base64 || null,
+    finalEvidenceUrl,
     evidence_name || null,
     evidence_type || null,
     evidence_size || null
   );
+
+  markDatabaseDirty();
 
   // Log audit
   logAudit({

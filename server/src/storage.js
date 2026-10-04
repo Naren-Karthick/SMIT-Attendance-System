@@ -64,6 +64,7 @@ async function backupDatabaseToVercel(dbPath) {
       access: 'public',
       token: BLOB_TOKEN,
       addRandomSuffix: false,
+      allowOverwrite: true,
       contentType: 'application/x-sqlite3'
     });
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { compressEvidenceFile, parseApiResponse } from '../../utils/fileCompressor';
 import confetti from 'canvas-confetti';
 import {
   FileCheck,
@@ -61,34 +62,49 @@ export const StudentApplyOD: React.FC<StudentApplyODProps> = ({ onNavigate }) =>
     'Other Academic On-Duty'
   ];
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [compressing, setCompressing] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('File size exceeds the 5MB institutional limit.');
+    // Validate size (max 8MB before compression)
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError('File size exceeds the 8MB limit. Please select a smaller photo or document.');
       return;
     }
 
     // Validate extension
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['pdf', 'png', 'jpg', 'jpeg'].includes(ext || '')) {
+    if (!['pdf', 'png', 'jpg', 'jpeg', 'webp'].includes(ext || '')) {
       setUploadError('Only PDF, JPG, and PNG documents are accepted.');
       return;
     }
 
+    if (ext === 'pdf' && file.size > 3.5 * 1024 * 1024) {
+      setUploadError('PDF file exceeds 3.5MB cloud limit. Please compress your PDF or upload as a photo.');
+      return;
+    }
+
     setUploadError(null);
-    const reader = new FileReader();
-    reader.onload = () => {
+    setCompressing(true);
+    try {
+      const compressed = await compressEvidenceFile(file);
       setEvidenceFile({
-        base64: reader.result as string,
-        name: file.name,
-        type: file.type,
-        size: file.size
+        base64: compressed.base64,
+        name: compressed.name,
+        type: compressed.type,
+        size: compressed.size
       });
-    };
-    reader.readAsDataURL(file);
+      if (compressed.size < file.size) {
+        const savedPercent = Math.round((1 - compressed.size / file.size) * 100);
+        showToast(`Document optimized for cloud upload (${Math.round(compressed.size / 1024)} KB, reduced ${savedPercent}%)`, 'info');
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to process document');
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const validateStep = (currentStep: number) => {
@@ -150,10 +166,7 @@ export const StudentApplyOD: React.FC<StudentApplyODProps> = ({ onNavigate }) =>
         })
       });
 
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || 'Failed to submit OD request.');
-      }
+      const result = await parseApiResponse(res);
 
       setSuccessRequestId(result.requestId);
       showToast('OD request submitted successfully!', 'success');

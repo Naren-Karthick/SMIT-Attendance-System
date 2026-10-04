@@ -3,11 +3,12 @@ const { getDb } = require('../db');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { logAudit, sendNotification } = require('../utils/auditLogger');
 const { getPolicy } = require('../attendanceEngine');
+const { uploadEvidenceToVercel, markDatabaseDirty } = require('../storage');
 
 const router = express.Router();
 
 // Apply Leave (Student)
-router.post('/apply', authenticateToken, (req, res) => {
+router.post('/apply', authenticateToken, async (req, res) => {
   if (req.user.role !== 'student') {
     return res.status(403).json({ error: 'Only students can apply for leave.' });
   }
@@ -38,6 +39,20 @@ router.post('/apply', authenticateToken, (req, res) => {
   const seqNum = String(countRow.count + 1).padStart(4, '0');
   const requestNumber = `LV-${currentYear}-${seqNum}`;
 
+  // Upload document to Vercel Blob storage if provided
+  let finalDocUrl = document_base64 || null;
+  if (document_base64) {
+    try {
+      const buffer = Buffer.from(document_base64.replace(/^data:.*?;base64,/, ''), 'base64');
+      const blobUrl = await uploadEvidenceToVercel(buffer, document_name || 'leave_document.jpg', document_type || 'image/jpeg');
+      if (blobUrl) {
+        finalDocUrl = blobUrl;
+      }
+    } catch (e) {
+      console.error('[Leave Upload] Vercel Blob upload notice:', e.message);
+    }
+  }
+
   db.prepare(`
     INSERT INTO leave_requests (
       request_number, student_id, leave_type, from_date, to_date, reason, remarks,
@@ -51,11 +66,13 @@ router.post('/apply', authenticateToken, (req, res) => {
     to_date,
     reason,
     remarks || null,
-    document_base64 || null,
+    finalDocUrl,
     document_name || null,
     document_type || null,
     document_size || null
   );
+
+  markDatabaseDirty();
 
   // Log audit
   logAudit({

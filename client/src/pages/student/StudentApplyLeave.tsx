@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { compressEvidenceFile, parseApiResponse } from '../../utils/fileCompressor';
 import confetti from 'canvas-confetti';
 import { CalendarCheck, Calendar, Upload, CheckCircle2, ArrowRight, ArrowLeft, X, AlertCircle } from 'lucide-react';
 
@@ -35,25 +36,36 @@ export const StudentApplyLeave: React.FC<StudentApplyLeaveProps> = ({ onNavigate
     'Other Personal Leave'
   ];
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Document exceeds 5MB limit.', 'error');
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Document exceeds 8MB limit.', 'error');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf' && file.size > 3.5 * 1024 * 1024) {
+      showToast('PDF file exceeds 3.5MB cloud limit. Please compress before uploading.', 'error');
+      return;
+    }
+
+    try {
+      const compressed = await compressEvidenceFile(file);
       setDocumentFile({
-        base64: reader.result as string,
-        name: file.name,
-        type: file.type,
-        size: file.size
+        base64: compressed.base64,
+        name: compressed.name,
+        type: compressed.type,
+        size: compressed.size
       });
-    };
-    reader.readAsDataURL(file);
+      if (compressed.size < file.size) {
+        const savedPercent = Math.round((1 - compressed.size / file.size) * 100);
+        showToast(`Document optimized (${Math.round(compressed.size / 1024)} KB, reduced ${savedPercent}%)`, 'info');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to read document', 'error');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,8 +101,7 @@ export const StudentApplyLeave: React.FC<StudentApplyLeaveProps> = ({ onNavigate
         })
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit leave.');
+      const data = await parseApiResponse(res);
 
       setSubmittedId(data.requestId);
       showToast('Leave request submitted successfully!', 'success');
