@@ -35,24 +35,26 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const triggerSync = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const token = localStorage.getItem('smit_token');
+      // 1. Force cloud sync endpoint to pull latest snapshot from Vercel Blob
+      const syncResult = await safeApiFetch<{ success: boolean; pulledNewer: boolean; status: StorageInfo }>('/api/storage/sync', {
+        method: 'POST'
+      }).catch(err => {
+        console.warn('[AutoSync] Cloud sync notice:', err.message);
+        return null;
+      });
 
-      // 1. Fetch live storage status & ping API
-      const statusPromise = safeApiFetch<StorageInfo>('/api/storage/status')
-        .then(data => {
-          if (data) setStorageInfo(data);
-        })
-        .catch(() => {});
+      if (syncResult?.status) {
+        setStorageInfo(syncResult.status);
+      }
 
-      // 2. Refresh auth & notifications in background
-      const authPromise = refreshMe();
+      // 2. Refresh auth & notifications
+      await refreshMe().catch(() => {});
 
-      // 3. Dispatch global sync event for active page components to refetch
+      // 3. Dispatch global sync event for active page components to re-fetch freshly synced data
       window.dispatchEvent(new CustomEvent('smit:sync', {
         detail: { timestamp: new Date().toISOString() }
       }));
 
-      await Promise.allSettled([statusPromise, authPromise]);
       setLastSyncedAt(new Date());
       setCountdown(SYNC_INTERVAL);
     } catch (err) {

@@ -6,6 +6,10 @@ const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const DB_BLOB_PATH = 'database/smit_attendance.db';
 
 let lastBackupTime = null;
+let localDbLoadedAt = null;
+let currentLocalEtag = null;
+let lastCloudCheckTime = 0;
+const CLOUD_CHECK_THROTTLE_MS = 1500; // Check cloud head at most once every 1.5s per container
 let isSyncing = false;
 let isDirty = false;
 
@@ -38,6 +42,49 @@ async function uploadEvidenceToVercel(buffer, filename, contentType) {
     console.error('[Vercel Storage] Failed to upload evidence file:', err.message);
     return null;
   }
+}
+
+/**
+ * Fast check against Vercel Blob metadata. If another container uploaded a newer snapshot,
+ * download it immediately and reload SQLite.
+ */
+async function syncWithCloudIfNewer(targetPath, forceImmediate = false) {
+  if (!BLOB_TOKEN) return false;
+
+  const now = Date.now();
+  if (!forceImmediate && now - lastCloudCheckTime < CLOUD_CHECK_THROTTLE_MS) {
+    return false;
+  }
+  lastCloudCheckTime = now;
+
+  try {
+    const blobHead = await head(DB_BLOB_PATH, { token: BLOB_TOKEN });
+    if (!blobHead || blobHead.size <= 4096) return false;
+
+    const remoteEtag = blobHead.etag ? blobHead.etag.replace(/"/g, '') : null;
+    const localEtag = currentLocalEtag ? currentLocalEtag.replace(/"/g, '') : null;
+
+    // Check by ETag first (cryptographically deterministic across serverless instances)
+    if (remoteEtag && localEtag) {
+      if (remoteEtag !== localEtag) {
+        console.log(`[Vercel Storage] Multi-container sync: ETag change detected (${remoteEtag} != ${localEtag}). Pulling freshest cloud database...`);
+        return await restoreDatabaseFromVercel(targetPath, blobHead);
+      }
+      return false;
+    }
+
+    // Fallback if local container cold-started without etag or etag missing
+    const remoteTime = blobHead.uploadedAt ? new Date(blobHead.uploadedAt).getTime() : 0;
+    const localTime = localDbLoadedAt ? new Date(localDbLoadedAt).getTime() : 0;
+
+    if (remoteTime > localTime || !currentLocalEtag) {
+      console.log(`[Vercel Storage] Multi-container sync: newer cloud snapshot (${blobHead.uploadedAt} > ${localDbLoadedAt || 'none'}). Reloading database...`);
+      return await restoreDatabaseFromVercel(targetPath, blobHead);
+    }
+  } catch (err) {
+    console.warn('[Vercel Storage] Cloud check notice:', err.message);
+  }
+  return false;
 }
 
 /**
@@ -74,13 +121,19 @@ async function backupDatabaseToVercel(dbPath) {
       token: BLOB_TOKEN,
       addRandomSuffix: false,
       allowOverwrite: true,
-      contentType: 'application/x-sqlite3'
+      contentType: 'application/x-sqlite3',
+      cacheControlMaxAge: 0
     });
 
-    lastBackupTime = new Date().toISOString();
+    const cleanEtag = blob.etag ? blob.etag.replace(/"/g, '') : null;
+    currentLocalEtag = cleanEtag;
+    const timestamp = new Date().toISOString();
+    lastBackupTime = timestamp;
+    localDbLoadedAt = timestamp;
+    lastCloudCheckTime = Date.now();
     isDirty = false;
-    console.log(`[Vercel Storage] Database snapshot persisted to Vercel Blob: ${blob.url} (${dbBuffer.length} bytes)`);
-    return { success: true, url: blob.url, time: lastBackupTime, size: dbBuffer.length };
+    console.log(`[Vercel Storage] Database snapshot persisted to Vercel Blob: ${blob.url} (${dbBuffer.length} bytes, etag: ${cleanEtag})`);
+    return { success: true, url: blob.url, time: lastBackupTime, size: dbBuffer.length, etag: cleanEtag };
   } catch (err) {
     console.error('[Vercel Storage] Backup failed:', err.message);
     return { success: false, error: err.message };
@@ -92,20 +145,23 @@ async function backupDatabaseToVercel(dbPath) {
 /**
  * Restore the SQLite database from Vercel Blob storage if a snapshot exists
  */
-async function restoreDatabaseFromVercel(targetPath) {
+async function restoreDatabaseFromVercel(targetPath, preloadedBlob = null) {
   if (!BLOB_TOKEN) {
     console.log('[Vercel Storage] BLOB_READ_WRITE_TOKEN not set; skipping cloud restore.');
     return false;
   }
 
   try {
-    console.log('[Vercel Storage] Checking for existing database snapshot in Vercel Blob...');
-    const { blobs } = await list({
-      prefix: 'database/',
-      token: BLOB_TOKEN
-    });
+    let dbBlob = preloadedBlob;
+    if (!dbBlob) {
+      console.log('[Vercel Storage] Checking for existing database snapshot in Vercel Blob...');
+      const { blobs } = await list({
+        prefix: 'database/',
+        token: BLOB_TOKEN
+      });
+      dbBlob = blobs.find(b => b.pathname === DB_BLOB_PATH);
+    }
 
-    const dbBlob = blobs.find(b => b.pathname === DB_BLOB_PATH);
     if (!dbBlob) {
       console.log('[Vercel Storage] No remote snapshot found in Vercel Blob. Starting fresh seed.');
       return false;
@@ -118,7 +174,16 @@ async function restoreDatabaseFromVercel(targetPath) {
     }
 
     console.log(`[Vercel Storage] Downloading remote snapshot from ${dbBlob.url} (${dbBlob.size} bytes)...`);
-    const res = await fetch(dbBlob.url);
+    // Cache-busting query param and headers to prevent CDN/Edge/fetch from serving stale cache
+    const cacheBustUrl = `${dbBlob.downloadUrl || dbBlob.url}${dbBlob.url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    const res = await fetch(cacheBustUrl, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
+
     if (!res.ok) {
       throw new Error(`Failed to fetch blob: HTTP ${res.status}`);
     }
@@ -146,8 +211,13 @@ async function restoreDatabaseFromVercel(targetPath) {
     }
 
     fs.writeFileSync(targetPath, buffer);
-    lastBackupTime = dbBlob.uploadedAt ? new Date(dbBlob.uploadedAt).toISOString() : new Date().toISOString();
-    console.log(`[Vercel Storage] Database successfully restored from Vercel Blob (${buffer.length} bytes)`);
+    const cleanEtag = dbBlob.etag ? dbBlob.etag.replace(/"/g, '') : null;
+    currentLocalEtag = cleanEtag;
+    const timestamp = dbBlob.uploadedAt ? new Date(dbBlob.uploadedAt).toISOString() : new Date().toISOString();
+    lastBackupTime = timestamp;
+    localDbLoadedAt = timestamp;
+    lastCloudCheckTime = Date.now();
+    console.log(`[Vercel Storage] Database successfully restored from Vercel Blob (${buffer.length} bytes, snapshot from ${timestamp}, etag: ${cleanEtag})`);
     return true;
   } catch (err) {
     console.error('[Vercel Storage] Failed to restore database from Vercel Blob:', err.message);
@@ -163,6 +233,8 @@ function getStorageStatus() {
     provider: 'Vercel Blob Storage',
     configured: isVercelStorageConfigured(),
     lastBackupTime,
+    localDbLoadedAt,
+    currentLocalEtag,
     isSyncing,
     isDirty,
     blobStoreId: process.env.BLOB_STORE_ID || null
@@ -175,5 +247,6 @@ module.exports = {
   uploadEvidenceToVercel,
   backupDatabaseToVercel,
   restoreDatabaseFromVercel,
+  syncWithCloudIfNewer,
   getStorageStatus
 };

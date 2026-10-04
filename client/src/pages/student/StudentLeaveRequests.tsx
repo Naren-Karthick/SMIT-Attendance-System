@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoSyncListener } from '../../context/SyncContext';
 import { safeApiFetch } from '../../utils/api';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -13,19 +14,22 @@ export const StudentLeaveRequests: React.FC<StudentLeaveRequestsProps> = ({ onNa
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchLeaves = async () => {
-      try {
-        const data = await safeApiFetch<{ requests: any[] }>('/api/leave/my-requests');
-        setRequests(data.requests || []);
-      } catch (e) {
-        console.warn('Failed to load leave requests:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeaves();
+  const fetchLeaves = useCallback(async () => {
+    try {
+      const data = await safeApiFetch<{ requests: any[] }>('/api/leave/my-requests');
+      setRequests(data.requests || []);
+    } catch (e) {
+      console.warn('Failed to load leave requests:', e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [fetchLeaves]);
+
+  useAutoSyncListener(fetchLeaves);
 
   return (
     <div className="page-wrapper">

@@ -4,7 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { initSchema, getDbPath, getDb } = require('./db');
 const { seedDatabase } = require('./seed');
-const { restoreDatabaseFromVercel, backupDatabaseToVercel } = require('./storage');
+const { restoreDatabaseFromVercel, backupDatabaseToVercel, syncWithCloudIfNewer } = require('./storage');
 
 // Note: initSchema will run inside ensureDbReady after cloud snapshot restore
 
@@ -46,17 +46,6 @@ async function ensureDbReady() {
 // Start initialization in background
 ensureDbReady();
 
-// Periodic Cloud Auto-Sync: backup database state to Vercel Storage every 30 seconds
-if (process.env.BLOB_READ_WRITE_TOKEN) {
-  setInterval(async () => {
-    try {
-      await backupDatabaseToVercel(getDbPath());
-    } catch (e) {
-      // background periodic sync error logged in storage module
-    }
-  }, 30 * 1000);
-}
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -65,10 +54,22 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Ensure database is 100% ready before any route runs
+// Disable HTTP caching for all API endpoints to prevent stale 304 or disk cache in browsers/proxies
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
+// Ensure database is 100% ready and synchronized across Vercel serverless containers before any route runs
 app.use(async (req, res, next) => {
   try {
     await ensureDbReady();
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      await syncWithCloudIfNewer(getDbPath());
+    }
     next();
   } catch (err) {
     next(err);

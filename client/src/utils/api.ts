@@ -10,6 +10,8 @@ export async function safeApiFetch<T = any>(
 ): Promise<T> {
   const token = localStorage.getItem('smit_token');
   const headers: Record<string, string> = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
     ...(options?.headers as Record<string, string> || {})
   };
 
@@ -21,7 +23,11 @@ export async function safeApiFetch<T = any>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, {
+    cache: 'no-store',
+    ...options,
+    headers
+  });
   const text = await res.text();
   const trimmed = text.trim();
 

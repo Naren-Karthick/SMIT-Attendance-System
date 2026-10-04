@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoSyncListener } from '../../context/SyncContext';
 import { safeApiFetch } from '../../utils/api';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EvidenceViewer } from '../../components/common/EvidenceViewer';
@@ -28,19 +29,22 @@ export const StudentODRequests: React.FC<StudentODRequestsProps> = ({ onNavigate
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const data = await safeApiFetch<{ requests: any[] }>('/api/od/my-requests');
-        setRequests(data.requests || []);
-      } catch (err) {
-        console.warn('Failed to load OD requests:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequests();
+  const fetchRequests = useCallback(async () => {
+    try {
+      const data = await safeApiFetch<{ requests: any[] }>('/api/od/my-requests');
+      setRequests(data.requests || []);
+    } catch (err) {
+      console.warn('Failed to load OD requests:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  useAutoSyncListener(fetchRequests);
 
   return (
     <div className="page-wrapper">

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoSyncListener } from '../../context/SyncContext';
+import { safeApiFetch } from '../../utils/api';
 import {
   Calendar,
   Clock,
@@ -22,26 +24,23 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchFacultyDashboard = useCallback(async () => {
+    if (!user?.facultyId) return;
+    try {
+      const data = await safeApiFetch(`/api/faculty/${user.facultyId}/dashboard`);
+      setDashboardData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.facultyId]);
+
   useEffect(() => {
-    const fetchFacultyDashboard = async () => {
-      if (!user?.facultyId) return;
-      try {
-        const token = localStorage.getItem('smit_token');
-        const res = await fetch(`/api/faculty/${user.facultyId}/dashboard`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDashboardData(data);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchFacultyDashboard();
-  }, [user]);
+  }, [fetchFacultyDashboard]);
+
+  useAutoSyncListener(fetchFacultyDashboard);
 
   if (loading || !dashboardData) {
     return (

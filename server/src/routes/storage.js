@@ -1,5 +1,5 @@
 const express = require('express');
-const { getStorageStatus, backupDatabaseToVercel, uploadEvidenceToVercel } = require('../storage');
+const { getStorageStatus, backupDatabaseToVercel, uploadEvidenceToVercel, syncWithCloudIfNewer } = require('../storage');
 const { getDbPath } = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -14,14 +14,16 @@ router.get('/status', (req, res) => {
   });
 });
 
-// 2. Trigger Manual Cloud Sync to Vercel Storage
-router.post('/sync', authenticateToken, async (req, res) => {
+// 2. Trigger Cloud Sync (Pulls latest remote snapshot if newer, and reconciles state)
+router.post('/sync', async (req, res) => {
   try {
     const dbPath = getDbPath();
-    const result = await backupDatabaseToVercel(dbPath);
+    // Force immediate sync with cloud snapshot without throttling
+    const pulledNewer = await syncWithCloudIfNewer(dbPath, true);
     res.json({
-      message: result.success ? 'Database successfully synced to Vercel Cloud Storage' : 'Database sync skipped or queued',
-      result,
+      success: true,
+      pulledNewer,
+      message: 'Database successfully synchronized with Vercel Cloud Storage',
       status: getStorageStatus()
     });
   } catch (err) {
