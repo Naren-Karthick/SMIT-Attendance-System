@@ -213,7 +213,7 @@ router.get('/all', authenticateToken, requireRole('hod', 'faculty'), (req, res) 
 });
 
 // 4. HOD Review (Approve / Reject / Clarify) with automatic attendance reconciliation!
-router.post('/:id/review', authenticateToken, requireRole('hod'), (req, res) => {
+router.post('/:id/review', authenticateToken, requireRole('hod'), async (req, res) => {
   const requestId = req.params.id;
   const { action, hod_remarks } = req.body; // action: 'APPROVE', 'REJECT', 'CLARIFY'
 
@@ -322,6 +322,15 @@ router.post('/:id/review', authenticateToken, requireRole('hod'), (req, res) => 
     });
 
     db.exec('COMMIT;');
+
+    // Persist reviewed status and attendance reconciliation to Vercel Blob
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await backupDatabaseToVercel(getDbPath());
+      } catch (e) {
+        console.error('[OD Review] Cloud backup notice:', e.message);
+      }
+    }
 
     res.json({
       success: true,

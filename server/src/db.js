@@ -12,9 +12,24 @@ function getDb() {
   if (!dbInstance) {
     dbInstance = new DatabaseSync(DB_PATH);
     dbInstance.exec('PRAGMA foreign_keys = ON;');
-    dbInstance.exec('PRAGMA journal_mode = WAL;');
+    // In serverless environments, DELETE journal mode keeps all data in a single file without separate WAL files
+    if (process.env.VERCEL) {
+      dbInstance.exec('PRAGMA journal_mode = DELETE;');
+    } else {
+      dbInstance.exec('PRAGMA journal_mode = WAL;');
+    }
   }
   return dbInstance;
+}
+
+function checkpointDb() {
+  try {
+    if (dbInstance) {
+      dbInstance.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    }
+  } catch (e) {
+    // Ignore checkpoint errors if not in WAL mode
+  }
 }
 
 function initSchema() {
@@ -306,5 +321,6 @@ function getDbPath() {
 module.exports = {
   getDb,
   initSchema,
-  getDbPath
+  getDbPath,
+  checkpointDb
 };

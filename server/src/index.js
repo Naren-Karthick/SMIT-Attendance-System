@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('node:path');
 const fs = require('node:fs');
-const { initSchema, getDbPath } = require('./db');
+const { initSchema, getDbPath, getDb } = require('./db');
 const { seedDatabase } = require('./seed');
 const { restoreDatabaseFromVercel, backupDatabaseToVercel } = require('./storage');
 
@@ -25,7 +25,20 @@ async function ensureDbReady() {
         console.error('[Storage Init] Cloud restore notice:', err.message);
       }
       initSchema();
-      seedDatabase();
+      try {
+        const userCount = getDb().prepare('SELECT count(*) as count FROM users').get().count;
+        if (userCount === 0) {
+          console.log('[Storage Init] Database empty. Seeding initial records...');
+          seedDatabase();
+          if (process.env.BLOB_READ_WRITE_TOKEN) {
+            await backupDatabaseToVercel(getDbPath());
+          }
+        } else {
+          console.log(`[Storage Init] Database active with ${userCount} users. Preserving user data.`);
+        }
+      } catch (err) {
+        console.error('[Storage Init] Seed verification notice:', err.message);
+      }
     })();
   }
   return dbReadyPromise;

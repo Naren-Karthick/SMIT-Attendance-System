@@ -173,7 +173,7 @@ router.get('/all', authenticateToken, requireRole('hod', 'faculty'), (req, res) 
 });
 
 // Review Leave (HOD)
-router.post('/:id/review', authenticateToken, requireRole('hod'), (req, res) => {
+router.post('/:id/review', authenticateToken, requireRole('hod'), async (req, res) => {
   const requestId = req.params.id;
   const { action, hod_remarks } = req.body;
 
@@ -256,6 +256,15 @@ router.post('/:id/review', authenticateToken, requireRole('hod'), (req, res) => 
     });
 
     db.exec('COMMIT;');
+
+    // Persist reviewed status to Vercel Blob
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await backupDatabaseToVercel(getDbPath());
+      } catch (e) {
+        console.error('[Leave Review] Cloud backup notice:', e.message);
+      }
+    }
 
     res.json({
       success: true,

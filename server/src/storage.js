@@ -48,6 +48,14 @@ async function backupDatabaseToVercel(dbPath) {
     return { success: false, reason: !BLOB_TOKEN ? 'no_token' : 'syncing' };
   }
 
+  // Force checkpoint if WAL was used, ensuring all pending transactions are flushed to disk
+  try {
+    const { checkpointDb } = require('./db');
+    checkpointDb();
+  } catch (e) {
+    // Ignore checkpoint errors
+  }
+
   if (!fs.existsSync(dbPath)) {
     return { success: false, reason: 'db_not_found' };
   }
@@ -55,9 +63,10 @@ async function backupDatabaseToVercel(dbPath) {
   isSyncing = true;
   try {
     const dbBuffer = fs.readFileSync(dbPath);
-    if (dbBuffer.length === 0) {
+    if (dbBuffer.length <= 4096) {
       isSyncing = false;
-      return { success: false, reason: 'empty_db' };
+      console.warn(`[Vercel Storage] Database buffer is too small (${dbBuffer.length} bytes). Skipping backup to avoid overwriting valid cloud snapshot.`);
+      return { success: false, reason: 'unpopulated_db' };
     }
 
     const blob = await put(DB_BLOB_PATH, dbBuffer, {
@@ -102,7 +111,13 @@ async function restoreDatabaseFromVercel(targetPath) {
       return false;
     }
 
-    console.log(`[Vercel Storage] Downloading remote snapshot from ${dbBlob.url}...`);
+    // Ignore tiny or unpopulated snapshots (<= 4096 bytes)
+    if (dbBlob.size <= 4096) {
+      console.warn(`[Vercel Storage] Remote database snapshot is unpopulated (${dbBlob.size} bytes). Skipping restore to preserve local seed.`);
+      return false;
+    }
+
+    console.log(`[Vercel Storage] Downloading remote snapshot from ${dbBlob.url} (${dbBlob.size} bytes)...`);
     const res = await fetch(dbBlob.url);
     if (!res.ok) {
       throw new Error(`Failed to fetch blob: HTTP ${res.status}`);
@@ -110,6 +125,11 @@ async function restoreDatabaseFromVercel(targetPath) {
 
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    if (buffer.length <= 4096) {
+      console.warn(`[Vercel Storage] Downloaded buffer too small (${buffer.length} bytes). Skipping restore.`);
+      return false;
+    }
 
     // Ensure directory exists
     const dir = path.dirname(targetPath);

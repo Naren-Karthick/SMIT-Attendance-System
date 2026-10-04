@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { useAutoSyncListener } from '../../context/SyncContext';
+import { safeApiFetch } from '../../utils/api';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { EvidenceViewer } from '../../components/common/EvidenceViewer';
 import { Drawer } from '../../components/common/Drawer';
@@ -57,21 +58,15 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
 
   const fetchQueue = useCallback(async () => {
     try {
-      const token = localStorage.getItem('smit_token');
       const endpoint = activeTab === 'od' ? '/api/od/all' : '/api/leave/all';
       let url = `${endpoint}?status=${statusFilter}`;
       if (yearFilter) url += `&year_level=${yearFilter}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
 
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data.requests);
-      }
+      const data = await safeApiFetch<{ requests: any[] }>(url);
+      setRequests(data.requests || []);
     } catch (err) {
-      console.error(err);
+      console.warn('Failed to load approvals queue:', err);
     } finally {
       setLoading(false);
     }
@@ -104,25 +99,17 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
 
     setProcessing(true);
     try {
-      const token = localStorage.getItem('smit_token');
       const endpoint = activeTab === 'od'
         ? `/api/od/${request.id}/review`
         : `/api/leave/${request.id}/review`;
 
-      const res = await fetch(endpoint, {
+      const data = await safeApiFetch<{ message?: string; status?: string }>(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
         body: JSON.stringify({
           action,
           hod_remarks: remarks.trim()
         })
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to review request.');
 
       showToast(data.message || `Request ${action.toLowerCase()}d successfully.`, 'success');
       if (action === 'APPROVE') {

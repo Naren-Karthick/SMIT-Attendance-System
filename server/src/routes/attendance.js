@@ -1,8 +1,9 @@
 const express = require('express');
-const { getDb } = require('../db');
+const { getDb, getDbPath } = require('../db');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { logAudit, sendNotification } = require('../utils/auditLogger');
 const { getPolicy, getStudentOverallAttendance, getStudentSubjectBreakdown } = require('../attendanceEngine');
+const { backupDatabaseToVercel } = require('../storage');
 
 const router = express.Router();
 
@@ -173,7 +174,7 @@ router.get('/prefill-status', authenticateToken, (req, res) => {
 });
 
 // 3. Submit attendance with duplicate check, atomic transactions, and audit
-router.post('/submit', authenticateToken, requireRole('faculty', 'hod'), (req, res) => {
+router.post('/submit', authenticateToken, requireRole('faculty', 'hod'), async (req, res) => {
   const {
     batch_id,
     section_id,
@@ -318,6 +319,15 @@ router.post('/submit', authenticateToken, requireRole('faculty', 'hod'), (req, r
 
     db.exec('COMMIT;');
 
+    // Persist attendance session and student records to Vercel Blob
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await backupDatabaseToVercel(getDbPath());
+      } catch (e) {
+        console.error('[Attendance Submit] Cloud backup notice:', e.message);
+      }
+    }
+
     res.json({
       success: true,
       sessionId,
@@ -422,7 +432,7 @@ router.get('/session/:id', authenticateToken, (req, res) => {
 });
 
 // 6. Attendance Correction by HOD with mandatory reason & audit log (Requirement 30)
-router.post('/correct', authenticateToken, requireRole('hod'), (req, res) => {
+router.post('/correct', authenticateToken, requireRole('hod'), async (req, res) => {
   const { session_id, student_id, new_status, reason } = req.body;
 
   if (!session_id || !student_id || !new_status || !reason || !reason.trim()) {
@@ -475,6 +485,15 @@ router.post('/correct', authenticateToken, requireRole('hod'), (req, res) => {
     type: 'attendance',
     linkUrl: '/student/attendance'
   });
+
+  // Persist corrected attendance to Vercel Blob
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      await backupDatabaseToVercel(getDbPath());
+    } catch (e) {
+      console.error('[Attendance Correct] Cloud backup notice:', e.message);
+    }
+  }
 
   res.json({
     success: true,
