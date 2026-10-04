@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Production Build Outputs
+client/dist/
+dist/
+dist-ssr/
+*.local
+
+# SQLite Database & Storage (seeded dynamically on startup)
+*.db
+*.db-shm
+*.db-wal
+smit_attendance.db*
+
+# Vercel
+.vercel/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Scratch & IDE Temporary Files
+scratch/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
