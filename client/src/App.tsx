@@ -22,6 +22,7 @@ import { FacultyDashboard } from './pages/faculty/FacultyDashboard';
 import { TakeAttendancePage } from './pages/faculty/TakeAttendancePage';
 import { FacultyClasses } from './pages/faculty/FacultyClasses';
 import { FacultyAttendanceHistory } from './pages/faculty/FacultyAttendanceHistory';
+import { FacultyClassRequests } from './pages/faculty/FacultyClassRequests';
 
 // HOD Pages
 import { HodDashboard } from './pages/hod/HodDashboard';
@@ -121,6 +122,8 @@ function AppContent() {
         return <FacultyClasses onNavigate={handleNavigate} />;
       case 'faculty-attendance-history':
         return <FacultyAttendanceHistory onNavigate={handleNavigate} />;
+      case 'faculty-class-requests':
+        return <FacultyClassRequests onNavigate={handleNavigate} />;
       case 'faculty-students':
         return <HodStudents />;
       case 'faculty-od':

@@ -137,6 +137,31 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ onNavigate }
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Students on verified On-Duty</div>
         </div>
+
+        {dashboardData.classInChargeInfo && (
+          <div
+            className="card"
+            style={{
+              padding: 18,
+              borderLeft: '4px solid #059669',
+              background: '#f0fdf4',
+              cursor: 'pointer'
+            }}
+            onClick={() => onNavigate('faculty-class-requests')}
+          >
+            <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>CLASS IN-CHARGE</span>
+              <span className="badge" style={{ background: '#059669', color: '#fff', fontSize: '0.65rem' }}>Stage 1</span>
+            </div>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#065f46', margin: '4px 0' }}>
+              {dashboardData.classInChargeInfo.totalPendingRequests}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#047857', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Year {dashboardData.classInChargeInfo.yearLevel} ({dashboardData.classInChargeInfo.batchName})</span>
+              <ArrowRight size={13} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Today's Teaching Schedule & 1-Click Attendance */}

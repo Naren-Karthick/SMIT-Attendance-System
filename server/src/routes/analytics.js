@@ -31,9 +31,11 @@ router.get('/kpis', authenticateToken, requireRole('hod', 'faculty'), (req, res)
     ? Math.round((completedSessionsToday / totalTimetableSlotsToday) * 100)
     : 100;
 
-  // Pending Approvals
-  const pendingODs = db.prepare("SELECT count(*) as count FROM od_requests WHERE status = 'PENDING'").get().count;
-  const pendingLeaves = db.prepare("SELECT count(*) as count FROM leave_requests WHERE status = 'PENDING'").get().count;
+  // Pending Approvals (For HOD: pending final endorsement)
+  const pendingODs = db.prepare("SELECT count(*) as count FROM od_requests WHERE status IN ('PENDING_HOD', 'PENDING')").get().count;
+  const pendingLeaves = db.prepare("SELECT count(*) as count FROM leave_requests WHERE status IN ('PENDING_HOD', 'PENDING')").get().count;
+  const pendingClassInChargeODs = db.prepare("SELECT count(*) as count FROM od_requests WHERE status = 'PENDING_CLASS_IN_CHARGE'").get().count;
+  const pendingClassInChargeLeaves = db.prepare("SELECT count(*) as count FROM leave_requests WHERE status = 'PENDING_CLASS_IN_CHARGE'").get().count;
 
   // Calculate live low-attendance student count (< 75%)
   const students = db.prepare('SELECT id, register_number, full_name, year_level, batch_id FROM students WHERE is_active = 1').all();
@@ -56,6 +58,8 @@ router.get('/kpis', authenticateToken, requireRole('hod', 'faculty'), (req, res)
     attendanceCompletionRate,
     pendingODs,
     pendingLeaves,
+    pendingClassInChargeODs,
+    pendingClassInChargeLeaves,
     criticalCount,
     warningCount,
     safeCount,

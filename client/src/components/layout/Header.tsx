@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useSync } from '../../context/SyncContext';
-import { Bell, User, LogOut, ArrowRightLeft, Check, Sparkles, Building2, BookOpen, Menu, RefreshCw, Cloud } from 'lucide-react';
+import { User, LogOut, ArrowRightLeft, Check, Sparkles, Building2, BookOpen, Menu, RefreshCw, Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   onNavigate: (page: string) => void;
@@ -11,25 +11,34 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenMobileDrawer }) => {
-  const { user, logout, switchUser, unreadCount, refreshMe } = useAuth();
+  const { user, logout, switchUser, refreshMe } = useAuth();
   const { showToast } = useToast();
   const { countdown, isSyncing, triggerSync, storageInfo } = useSync();
 
-  const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [recentNotifs, setRecentNotifs] = useState<any[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('smit_theme_mode');
+    return saved === 'dark';
+  });
 
-  const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const switcherRef = useRef<HTMLDivElement>(null);
+
+  // Apply theme to document on mount and change
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('smit_theme_mode', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('smit_theme_mode', 'light');
+    }
+  }, [isDarkMode]);
 
   // Close popovers when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setNotifOpen(false);
-      }
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
       }
@@ -41,26 +50,12 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadNotifications = async () => {
-    try {
-      const token = localStorage.getItem('smit_token');
-      const res = await fetch('/api/notifications?filter=all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRecentNotifs(data.notifications.slice(0, 5));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleOpenNotif = () => {
-    setNotifOpen(!notifOpen);
-    if (!notifOpen) {
-      loadNotifications();
-    }
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      showToast(`Switched to ${next ? 'Dark' : 'Light'} Mode`, 'info');
+      return next;
+    });
   };
 
   const handleQuickSwitch = async (identifier: string, name: string, role: string) => {
@@ -118,6 +113,25 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
       </div>
 
       <div className="header-right">
+        {/* Persistent Dark Mode Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn-icon header-theme-toggle-btn"
+          aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          style={{
+            borderRadius: '50%',
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 200ms ease'
+          }}
+        >
+          {isDarkMode ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#475569" />}
+        </button>
+
         {/* Vercel Cloud Storage & Auto-Sync Status Badge */}
         <button
           onClick={triggerSync}
@@ -156,8 +170,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: '#f8fafc',
-              borderColor: '#cbd5e1',
+              background: 'var(--surface-white)',
+              borderColor: 'var(--neutral-300)',
               color: 'var(--primary-700)',
               fontWeight: 600
             }}
@@ -174,15 +188,15 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                 top: '110%',
                 right: 0,
                 width: 'min(300px, calc(100vw - 24px))',
-                background: '#fff',
+                background: 'var(--surface-white)',
                 borderRadius: 12,
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+                border: '1px solid var(--neutral-200)',
                 padding: '12px',
                 zIndex: 60
               }}
             >
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--neutral-500)', textTransform: 'uppercase', marginBottom: 8 }}>
                 Quick Test Switcher
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -206,10 +220,10 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#0f172a' }}>
+                        <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--neutral-900)' }}>
                           {acc.name}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--neutral-500)' }}>
                           {acc.title} ({acc.role.toUpperCase()})
                         </div>
                       </div>
@@ -221,109 +235,6 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenM
             </div>
           )}
         </div>
-
-        {/* Notifications Bell */}
-        <div style={{ position: 'relative' }} ref={notifRef}>
-          <button
-            onClick={handleOpenNotif}
-            className="btn-icon header-notif-btn"
-            style={{ position: 'relative' }}
-            aria-label="Notifications"
-          >
-            <Bell size={18} />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 3,
-                  right: 3,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: '#ef4444',
-                  border: '1.5px solid #fff'
-                }}
-              />
-            )}
-          </button>
-
-          {notifOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '110%',
-                right: 0,
-                width: 'min(340px, calc(100vw - 24px))',
-                background: '#fff',
-                borderRadius: 12,
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                border: '1px solid #e2e8f0',
-                overflow: 'hidden',
-                zIndex: 60
-              }}
-            >
-              <div
-                style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid #e2e8f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: '#f8fafc'
-                }}
-              >
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
-                  Notifications {unreadCount > 0 && `(${unreadCount} unread)`}
-                </span>
-                <button
-                  onClick={() => {
-                    setNotifOpen(false);
-                    onNavigate('notifications');
-                  }}
-                  style={{
-                    fontSize: '0.75rem',
-                    color: '#2563eb',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  View All
-                </button>
-              </div>
-
-              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                {recentNotifs.length === 0 ? (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>
-                    No recent notifications.
-                  </div>
-                ) : (
-                  recentNotifs.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => {
-                        setNotifOpen(false);
-                        if (n.link_url) onNavigate(n.link_url.replace(/^\//, ''));
-                      }}
-                      style={{
-                        padding: '10px 14px',
-                        borderBottom: '1px solid #f1f5f9',
-                        cursor: 'pointer',
-                        background: n.is_read ? '#fff' : '#f8fafc'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0f172a' }}>{n.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>{n.message}</div>
-                      <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: 4 }}>{n.created_at}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* User Pill / Profile Dropdown */}
         <div style={{ position: 'relative' }} ref={profileRef}>
           <button

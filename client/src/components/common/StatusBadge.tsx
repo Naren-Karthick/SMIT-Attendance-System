@@ -29,8 +29,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
         return { className: 'badge-critical', icon: <XCircle size={12} />, label: 'Critical (<75%)' };
       case 'APPROVED':
         return { className: 'badge-approved', icon: <CheckCircle2 size={12} />, label: 'Approved' };
-      case 'PENDING':
+      case 'PENDING_CLASS_IN_CHARGE':
+        return { className: 'badge-warning', icon: <Clock size={12} />, label: 'Pending Class In-Charge' };
+      case 'PENDING_HOD':
         return { className: 'badge-pending', icon: <Clock size={12} />, label: 'Pending HOD' };
+      case 'PENDING':
+        return { className: 'badge-pending', icon: <Clock size={12} />, label: 'Pending Review' };
+      case 'REJECTED_BY_IN_CHARGE':
+        return { className: 'badge-rejected', icon: <XCircle size={12} />, label: 'Rejected by In-Charge' };
+      case 'REJECTED_BY_HOD':
+        return { className: 'badge-rejected', icon: <XCircle size={12} />, label: 'Rejected by HOD' };
       case 'REJECTED':
         return { className: 'badge-rejected', icon: <XCircle size={12} />, label: 'Rejected' };
       case 'CLARIFICATION_REQUESTED':

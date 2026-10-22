@@ -145,7 +145,81 @@ router.delete('/entry/:id', authenticateToken, requireRole('hod'), (req, res) =>
     ipAddress: req.ip
   });
 
-  res.json({ success: true, message: 'Timetable slot removed.' });
+  res.json({ message: 'Timetable entry deleted successfully.' });
+});
+
+// 4. Smart Auto-Fill helper: Match current system Date/Time against timetable schedule
+router.get('/current-slot', authenticateToken, (req, res) => {
+  const db = getDb();
+
+  // Accept optional query overrides for testing or take server's current date/time
+  const reqDate = req.query.date || new Date().toISOString().split('T')[0];
+  const dateObj = new Date(reqDate);
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayOfWeek = req.query.day || (
+    dayNames[dateObj.getDay()] === 'Sunday' || dayNames[dateObj.getDay()] === 'Saturday'
+      ? 'Monday'
+      : dayNames[dateObj.getDay()]
+  );
+
+  // Time in HH:MM format
+  const now = new Date();
+  const currentHours = String(now.getHours()).padStart(2, '0');
+  const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+  const currentTime = req.query.time || `${currentHours}:${currentMinutes}`;
+
+  // Find effective faculty id (works for faculty or HOD)
+  let facultyId = req.user.facultyId;
+  if (!facultyId && (req.user.role === 'hod' || req.user.role === 'faculty')) {
+    const fRow = db.prepare('SELECT id FROM faculty WHERE user_id = ?').get(req.user.id);
+    if (fRow) facultyId = fRow.id;
+  }
+
+  // Determine current period from time
+  let detectedPeriod = 1;
+  for (const p of PERIOD_CONFIG) {
+    if (!p.isBreak && currentTime >= p.start && currentTime <= p.end) {
+      detectedPeriod = p.period;
+      break;
+    }
+  }
+
+  // Cross-reference against faculty timetable schedule
+  let matchedSlot = null;
+  if (facultyId) {
+    // Try exact match on period first
+    matchedSlot = db.prepare(`
+      SELECT t.*, s.id as subject_id, s.code as subject_code, s.name as subject_name,
+             b.id as batch_id, b.name as batch_name, b.year_level, b.semester
+      FROM timetables t
+      JOIN subjects s ON t.subject_id = s.id
+      JOIN batches b ON t.batch_id = b.id
+      WHERE t.faculty_id = ? AND t.day_of_week = ? AND t.period_number = ?
+    `).get(facultyId, dayOfWeek, detectedPeriod);
+
+    // If no exact match for this period, get the first scheduled class today for this faculty as closest suggestion
+    if (!matchedSlot) {
+      matchedSlot = db.prepare(`
+        SELECT t.*, s.id as subject_id, s.code as subject_code, s.name as subject_name,
+               b.id as batch_id, b.name as batch_name, b.year_level, b.semester
+        FROM timetables t
+        JOIN subjects s ON t.subject_id = s.id
+        JOIN batches b ON t.batch_id = b.id
+        WHERE t.faculty_id = ? AND t.day_of_week = ?
+        ORDER BY t.period_number ASC
+        LIMIT 1
+      `).get(facultyId, dayOfWeek);
+    }
+  }
+
+  res.json({
+    systemDate: reqDate,
+    systemTime: currentTime,
+    dayOfWeek,
+    detectedPeriod: matchedSlot ? matchedSlot.period_number : detectedPeriod,
+    matchedSlot: matchedSlot || null,
+    hasMatch: !!matchedSlot
+  });
 });
 
 module.exports = router;

@@ -32,7 +32,7 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'od' | 'leave'>(initialTab);
-  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'PENDING_CLASS_IN_CHARGE' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
   const [yearFilter, setYearFilter] = useState<string>('');
   const [search, setSearch] = useState('');
 
@@ -41,6 +41,9 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
 
   // Drawer / Inspection
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+
+  // Evidence Preview Lightbox Modal
+  const [evidenceModalRequest, setEvidenceModalRequest] = useState<any | null>(null);
 
   // Confirmation Modal
   const [confirmModal, setConfirmModal] = useState<{
@@ -289,16 +292,26 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
                         </td>
                         <td>
                           {hasEvidence ? (
-                            <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <CheckCircle2 size={13} />
-                              <span>Attached</span>
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setEvidenceModalRequest(req)}
+                              className="btn btn-outline btn-sm"
+                              style={{ color: '#059669', borderColor: '#86efac', padding: '3px 8px', fontSize: '0.72rem' }}
+                            >
+                              <Eye size={12} />
+                              <span>View Evidence</span>
+                            </button>
                           ) : (
                             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Self-declared</span>
                           )}
                         </td>
                         <td>
                           <StatusBadge status={req.status} size="sm" />
+                          {req.in_charge_reviewer_name && (
+                            <div style={{ fontSize: '0.68rem', color: '#047857', marginTop: 2 }}>
+                              Endorsed by {req.in_charge_reviewer_name}
+                            </div>
+                          )}
                         </td>
                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                           <button
@@ -310,7 +323,7 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
                             <span>Inspect</span>
                           </button>
 
-                          {req.status === 'PENDING' && (
+                          {(req.status === 'PENDING' || req.status === 'PENDING_HOD') && (
                             <>
                               <button
                                 onClick={() => handleActionClick('APPROVE', req)}
@@ -594,6 +607,37 @@ export const HodApprovals: React.FC<HodApprovalsProps> = ({ initialTab = 'od' })
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Dedicated Evidence Viewer Modal (OD Evidence Viewer Requirement) */}
+      <Modal
+        isOpen={!!evidenceModalRequest}
+        onClose={() => setEvidenceModalRequest(null)}
+        title={`Verification Proof: ${evidenceModalRequest?.request_number || ''}`}
+        subtitle={`${evidenceModalRequest?.student_name} (${evidenceModalRequest?.register_number})`}
+      >
+        {evidenceModalRequest && (
+          <div>
+            <div style={{ marginBottom: 14, fontSize: '0.85rem', color: '#475569' }}>
+              <strong>Event / Subject:</strong> {evidenceModalRequest.event_name || evidenceModalRequest.leave_type} ({evidenceModalRequest.from_date} to {evidenceModalRequest.to_date})
+            </div>
+            <EvidenceViewer
+              evidenceUrl={evidenceModalRequest.evidence_url || evidenceModalRequest.document_url}
+              evidenceName={evidenceModalRequest.evidence_name || evidenceModalRequest.document_name}
+              evidenceType={evidenceModalRequest.evidence_type || evidenceModalRequest.document_type}
+              evidenceSize={evidenceModalRequest.evidence_size || evidenceModalRequest.document_size}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => setEvidenceModalRequest(null)}
+                className="btn btn-outline"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

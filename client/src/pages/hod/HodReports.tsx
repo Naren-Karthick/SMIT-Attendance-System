@@ -107,6 +107,8 @@ export const HodReports: React.FC = () => {
           >
             <option value="overall">Overall Attendance Report</option>
             <option value="student_wise">Student-Wise Ledger</option>
+            <option value="anna_univ_coe">Anna University COE Portal Export</option>
+            <option value="parent_defaulter">Parent Defaulter Notice List (&lt;75%)</option>
             <option value="od">On-Duty (OD) Log Report</option>
             <option value="leave">Leave Management Report</option>
           </select>

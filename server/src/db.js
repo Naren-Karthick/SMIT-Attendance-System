@@ -225,7 +225,7 @@ function initSchema() {
       evidence_name TEXT,
       evidence_type TEXT,
       evidence_size INTEGER,
-      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'APPROVED', 'REJECTED', 'CLARIFICATION_REQUESTED')),
+      status TEXT NOT NULL DEFAULT 'PENDING_CLASS_IN_CHARGE' CHECK(status IN ('PENDING_CLASS_IN_CHARGE', 'PENDING_HOD', 'APPROVED', 'REJECTED_BY_IN_CHARGE', 'REJECTED_BY_HOD', 'REJECTED', 'PENDING', 'CLARIFICATION_REQUESTED')),
       hod_remarks TEXT,
       reviewed_by INTEGER REFERENCES users(id),
       reviewed_at TEXT,
@@ -247,7 +247,7 @@ function initSchema() {
       document_name TEXT,
       document_type TEXT,
       document_size INTEGER,
-      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'APPROVED', 'REJECTED', 'CLARIFICATION_REQUESTED')),
+      status TEXT NOT NULL DEFAULT 'PENDING_CLASS_IN_CHARGE' CHECK(status IN ('PENDING_CLASS_IN_CHARGE', 'PENDING_HOD', 'APPROVED', 'REJECTED_BY_IN_CHARGE', 'REJECTED_BY_HOD', 'REJECTED', 'PENDING', 'CLARIFICATION_REQUESTED')),
       hod_remarks TEXT,
       reviewed_by INTEGER REFERENCES users(id),
       reviewed_at TEXT,
@@ -323,6 +323,29 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
     CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
   `);
+
+  // Safe incremental schema migrations
+  const runMigration = (sql) => {
+    try {
+      db.exec(sql);
+    } catch (e) {
+      // Column or table might already exist
+    }
+  };
+
+  // Faculty Class In-Charge columns
+  runMigration('ALTER TABLE faculty ADD COLUMN class_in_charge_batch_id INTEGER REFERENCES batches(id);');
+  runMigration('ALTER TABLE faculty ADD COLUMN class_in_charge_section_id INTEGER REFERENCES sections(id);');
+
+  // OD multi-stage approval columns
+  runMigration('ALTER TABLE od_requests ADD COLUMN in_charge_remarks TEXT;');
+  runMigration('ALTER TABLE od_requests ADD COLUMN in_charge_reviewed_by INTEGER REFERENCES users(id);');
+  runMigration('ALTER TABLE od_requests ADD COLUMN in_charge_reviewed_at TEXT;');
+
+  // Leave multi-stage approval columns
+  runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_remarks TEXT;');
+  runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_reviewed_by INTEGER REFERENCES users(id);');
+  runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_reviewed_at TEXT;');
 }
 
 function getDbPath() {

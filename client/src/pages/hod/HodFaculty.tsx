@@ -78,7 +78,9 @@ export const HodFaculty: React.FC = () => {
           designation: editingFaculty.designation,
           email: editingFaculty.email,
           phone: editingFaculty.phone,
-          room_no: editingFaculty.room_no
+          room_no: editingFaculty.room_no,
+          class_in_charge_batch_id: editingFaculty.class_in_charge_batch_id || null,
+          class_in_charge_section_id: editingFaculty.class_in_charge_section_id || null
         })
       });
       const data = await res.json();
@@ -113,13 +115,18 @@ export const HodFaculty: React.FC = () => {
           <div key={f.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="card-header">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e3a8a', fontFamily: 'monospace' }}>
                     {f.faculty_id}
                   </span>
                   {f.is_hod === 1 && (
                     <span className="badge" style={{ background: '#1e3a8a', color: '#fff', fontSize: '0.6875rem' }}>
                       HOD / Head
+                    </span>
+                  )}
+                  {f.class_in_charge_batch_id && (
+                    <span className="badge" style={{ background: '#059669', color: '#fff', fontSize: '0.6875rem' }}>
+                      Class In-Charge: Year {f.class_in_charge_year_level} (Sem {f.class_in_charge_semester})
                     </span>
                   )}
                 </div>
@@ -129,7 +136,11 @@ export const HodFaculty: React.FC = () => {
 
               <button
                 onClick={() => {
-                  setEditingFaculty(f);
+                  setEditingFaculty({
+                    ...f,
+                    class_in_charge_batch_id: f.class_in_charge_batch_id || '',
+                    class_in_charge_section_id: f.class_in_charge_section_id || ''
+                  });
                   setEditModalOpen(true);
                 }}
                 className="btn-icon"
@@ -316,6 +327,30 @@ export const HodFaculty: React.FC = () => {
                 onChange={e => setEditingFaculty({ ...editingFaculty, email: e.target.value })}
                 required
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Class In-Charge Assignment</label>
+              <select
+                className="form-control form-select"
+                value={editingFaculty.class_in_charge_batch_id || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  setEditingFaculty({
+                    ...editingFaculty,
+                    class_in_charge_batch_id: val ? parseInt(val, 10) : '',
+                    class_in_charge_section_id: val ? 1 : ''
+                  });
+                }}
+              >
+                <option value="">None (Standard Faculty)</option>
+                <option value="1">2nd Year IT (3rd Sem) — Section A</option>
+                <option value="2">3rd Year IT (5th Sem) — Section A</option>
+                <option value="3">4th Year IT (7th Sem) — Section A</option>
+              </select>
+              <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 4, display: 'block' }}>
+                Class In-Charges review Stage 1 OD and Leave requests before escalating to HOD.
+              </small>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>

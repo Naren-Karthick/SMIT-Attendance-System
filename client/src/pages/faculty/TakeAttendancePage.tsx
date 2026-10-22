@@ -75,6 +75,50 @@ export const TakeAttendancePage: React.FC<TakeAttendancePageProps> = ({ initialP
     session?: any;
   } | null>(null);
 
+  // Auto-Fill matched status indicator
+  const [autoFilled, setAutoFilled] = useState(false);
+  const [matchedSlotSummary, setMatchedSlotSummary] = useState<any>(null);
+
+  // Smart Auto-Fill on mount: capture current system Date and Time and cross-reference timetable
+  useEffect(() => {
+    // Only auto-fill if not arriving with explicit initialParams
+    if (initialParams?.batchId && initialParams?.periodNumber) return;
+
+    const performSmartAutoFill = async () => {
+      try {
+        const token = localStorage.getItem('smit_token');
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const res = await fetch(`/api/timetable/current-slot?date=${dateStr}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.systemDate && !initialParams?.date) {
+            setSessionDate(data.systemDate);
+          }
+          if (data.matchedSlot) {
+            setBatchId(data.matchedSlot.batch_id);
+            setSubjectId(data.matchedSlot.subject_id);
+            setPeriodNumber(data.matchedSlot.period_number);
+            setMatchedSlotSummary(data.matchedSlot);
+            setAutoFilled(true);
+            showToast(
+              `Smart Auto-Fill: Selected Period ${data.matchedSlot.period_number} • ${data.matchedSlot.subject_code} (${data.dayOfWeek})`,
+              'info'
+            );
+          } else if (data.detectedPeriod) {
+            setPeriodNumber(data.detectedPeriod);
+          }
+        }
+      } catch (e) {
+        console.warn('Smart auto-fill timetable lookup:', e);
+      }
+    };
+
+    performSmartAutoFill();
+  }, []);
+
   // Fetch subjects for chosen batch
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -89,7 +133,7 @@ export const TakeAttendancePage: React.FC<TakeAttendancePageProps> = ({ initialP
         if (res.ok) {
           const data = await res.json();
           setSubjects(data.subjects);
-          if (data.subjects.length > 0 && !initialParams?.subjectId) {
+          if (data.subjects.length > 0 && !initialParams?.subjectId && !autoFilled) {
             setSubjectId(data.subjects[0].id);
           }
         }
@@ -469,7 +513,41 @@ export const TakeAttendancePage: React.FC<TakeAttendancePageProps> = ({ initialP
 
       {/* Student List Table */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-header" style={{ padding: '12px 20px' }}>
+        {/* Mobile Sticky Class Header & Search Bar */}
+        <div className="mobile-take-attendance-top-bar">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Period {periodNumber} • {batches.find(b => b.id === batchId)?.name?.split('(')[0]?.trim() || `Batch ${batchId}`}
+              </div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                {subjects.find(s => s.id === subjectId)?.name || 'Class Subject'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleMarkAllPresent}
+              className="btn btn-outline btn-sm"
+              style={{ color: '#059669', borderColor: '#86efac', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}
+            >
+              Mark All P
+            </button>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="text"
+              className="form-control"
+              style={{ paddingLeft: 30, padding: '7px 12px 7px 30px', fontSize: '0.82rem', borderRadius: 8 }}
+              placeholder="Search student or register no..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="card-header desktop-attendance-header" style={{ padding: '12px 20px' }}>
           <div style={{ position: 'relative', width: 280 }}>
             <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
@@ -624,22 +702,22 @@ export const TakeAttendancePage: React.FC<TakeAttendancePageProps> = ({ initialP
 
       {/* Floating Sticky Quick-Submit Bar for Mobile Phones */}
       <div className="mobile-floating-submit-bar">
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            Present: <strong style={{ color: '#059669' }}>{presentCount}</strong> / {students.length}
-          </span>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-            OD: {odCount} • Absent: {absentCount}
-          </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
+            Total: <strong>{students.length}</strong> • <span style={{ color: '#059669' }}>P: {presentCount}</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+            <span style={{ color: '#dc2626' }}>A: {absentCount}</span> • <span style={{ color: '#2563eb' }}>OD: {odCount}</span> • <span style={{ color: '#0891b2' }}>Perm: {permCount}</span>
+          </div>
         </div>
         <button
           onClick={handleSubmitAttendance}
           disabled={submitting || (sessionCheck?.exists && sessionCheck.canEdit === false)}
-          className="btn btn-primary btn-sm"
-          style={{ padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+          className="btn btn-primary"
+          style={{ padding: '9px 18px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, borderRadius: 10 }}
         >
-          <Save size={15} />
-          <span>{submitting ? 'Saving...' : (sessionCheck?.exists ? 'Update' : 'Submit')}</span>
+          <Save size={16} />
+          <span>{submitting ? 'Submitting...' : (sessionCheck?.exists ? 'Update Attendance' : 'Submit Attendance')}</span>
         </button>
       </div>
     </div>

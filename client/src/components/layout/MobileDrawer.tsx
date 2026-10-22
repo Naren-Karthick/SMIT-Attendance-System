@@ -229,6 +229,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 <span>Take Attendance</span>
               </button>
               <button
+                className={`drawer-link ${currentPage === 'faculty-class-requests' ? 'active' : ''}`}
+                onClick={() => handleNavClick('faculty-class-requests')}
+              >
+                <ShieldCheck size={18} />
+                <span>Class Requests (Stage 1)</span>
+              </button>
+              <button
                 className={`drawer-link ${currentPage === 'faculty-attendance-history' ? 'active' : ''}`}
                 onClick={() => handleNavClick('faculty-attendance-history')}
               >
@@ -256,6 +263,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               >
                 <LayoutDashboard size={18} />
                 <span>Executive Dashboard</span>
+              </button>
+              <button
+                className={`drawer-link ${currentPage === 'take-attendance' ? 'active' : ''}`}
+                onClick={() => handleNavClick('take-attendance')}
+              >
+                <CheckSquare size={18} />
+                <span>Take Class Attendance</span>
               </button>
               <button
                 className={`drawer-link ${currentPage === 'hod-od-approvals' || currentPage === 'hod-leave-approvals' ? 'active' : ''}`}

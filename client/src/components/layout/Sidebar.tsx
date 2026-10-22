@@ -17,7 +17,8 @@ import {
   Bell,
   User,
   ShieldCheck,
-  Network
+  Network,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,7 +27,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const role = user?.role || 'student';
 
   const renderStudentLinks = () => (
@@ -150,6 +151,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         <span>Timetable</span>
       </button>
 
+      <div className="nav-section-title">Class In-Charge</div>
+      <button
+        className={`nav-link ${currentPage === 'faculty-class-requests' ? 'active' : ''}`}
+        onClick={() => onNavigate('faculty-class-requests')}
+      >
+        <ShieldCheck size={18} />
+        <span>Class Requests (Stage 1)</span>
+      </button>
+
       <div className="nav-section-title">Approvals & Info</div>
       <button
         className={`nav-link ${currentPage === 'faculty-od' ? 'active' : ''}`}
@@ -214,6 +224,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
       >
         <CheckSquare size={18} />
         <span>Attendance Hub</span>
+      </button>
+      <button
+        className={`nav-link ${currentPage === 'take-attendance' ? 'active' : ''}`}
+        onClick={() => onNavigate('take-attendance')}
+      >
+        <CheckSquare size={18} />
+        <span>Take Class Attendance</span>
       </button>
 
       <div className="nav-section-title">Approval Center</div>
@@ -319,6 +336,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         {role === 'faculty' && renderFacultyLinks()}
         {role === 'student' && renderStudentLinks()}
       </nav>
+
+      <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', marginTop: 'auto' }}>
+        <button
+          onClick={logout}
+          className="nav-link"
+          style={{
+            width: '100%',
+            color: '#f87171',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '10px 14px',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          title="Sign out of SMIT Smart Attendance"
+        >
+          <LogOut size={16} />
+          <span>Sign Out</span>
+        </button>
+      </div>
     </aside>
   );
 };

@@ -255,6 +255,83 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigate }
         </div>
       </div>
 
+      {/* Unique Feature: Interactive Attendance Target & Recovery Simulator */}
+      <div className="card" style={{ marginBottom: 24, padding: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0 }}>Smart Attendance Target & Recovery Simulator</h3>
+              <p style={{ fontSize: '0.785rem', color: '#64748b', marginTop: 2 }}>Simulate future lecture attendance to forecast semester eligibility</p>
+            </div>
+          </div>
+          <span className="badge badge-safe">Anna University 75% Rule Engine</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          {[
+            { target: 75, label: 'Anna Univ Minimum Safe (75%)', color: '#f59e0b', bg: '#fffbeb' },
+            { target: 80, label: 'Department Target (80%)', color: '#0284c7', bg: '#f0f9ff' },
+            { target: 85, label: 'Distinction / Honors (85%)', color: '#059669', bg: '#ecfdf5' },
+            { target: 90, label: 'Dean Merit Excellence (90%)', color: '#7c3aed', bg: '#faf5ff' }
+          ].map(sim => {
+            const T = sim.target / 100;
+            const P = overall.attendedHours;
+            const N = overall.applicableTotal;
+            let needed = 0;
+            let canBunk = 0;
+
+            if (N > 0) {
+              if (overall.percentage < sim.target) {
+                // (P + x) / (N + x) >= T => P + x >= T*N + T*x => x(1 - T) >= T*N - P => x = ceil((T*N - P)/(1 - T))
+                needed = Math.max(0, Math.ceil((T * N - P) / (1 - T)));
+              } else {
+                // P / (N + y) >= T => P >= T*N + T*y => T*y <= P - T*N => y = floor((P - T*N)/T)
+                canBunk = Math.max(0, Math.floor((P - T * N) / T));
+              }
+            }
+
+            return (
+              <div
+                key={sim.target}
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  background: sim.bg,
+                  border: `1px solid ${sim.color}30`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: sim.color, textTransform: 'uppercase' }}>
+                    {sim.label}
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: sim.color, marginTop: 4 }}>
+                    {overall.percentage >= sim.target ? (
+                      <span style={{ fontSize: '1rem', color: '#059669' }}>Goal Achieved!</span>
+                    ) : (
+                      <span>+{needed} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>classes</span></span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: 8 }}>
+                  {overall.percentage >= sim.target ? (
+                    <span>You can safely miss up to <strong>{canBunk} classes</strong> without falling below {sim.target}%.</span>
+                  ) : (
+                    <span>Attend <strong>{needed} consecutive classes</strong> to reach this milestone.</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Subject-Wise Attendance Overview */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">

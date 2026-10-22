@@ -11,11 +11,15 @@ router.get('/', authenticateToken, (req, res) => {
   const db = getDb();
   const faculty = db.prepare(`
     SELECT f.*, u.username,
+           b.name as class_in_charge_batch_name, b.year_level as class_in_charge_year_level, b.semester as class_in_charge_semester,
+           sec.name as class_in_charge_section_name,
            (SELECT count(DISTINCT subject_id) FROM subject_assignments WHERE faculty_id = f.id) as assigned_subjects_count,
            (SELECT count(*) FROM timetables WHERE faculty_id = f.id) as weekly_periods_count,
            (SELECT count(*) FROM attendance_sessions WHERE faculty_id = f.id) as total_sessions_taken
     FROM faculty f
     JOIN users u ON f.user_id = u.id
+    LEFT JOIN batches b ON f.class_in_charge_batch_id = b.id
+    LEFT JOIN sections sec ON f.class_in_charge_section_id = sec.id
     ORDER BY f.is_hod DESC, f.full_name ASC
   `).all();
 
@@ -104,6 +108,42 @@ router.get('/:id/dashboard', authenticateToken, (req, res) => {
   // Aggregate OD alerts for today
   const totalOdAlerts = enrichedClasses.reduce((acc, c) => acc + c.approvedOdCount, 0);
 
+  // Check if this faculty is assigned as Class In-Charge
+  let classInChargeInfo = null;
+  if (fac.class_in_charge_batch_id) {
+    const batch = db.prepare('SELECT id, name, year_level, semester FROM batches WHERE id = ?').get(fac.class_in_charge_batch_id);
+    const sec = fac.class_in_charge_section_id
+      ? db.prepare('SELECT id, name FROM sections WHERE id = ?').get(fac.class_in_charge_section_id)
+      : null;
+
+    // Count pending OD and Leave requests for this class
+    const pendingClassOdCount = db.prepare(`
+      SELECT count(*) as count
+      FROM od_requests r
+      JOIN students s ON r.student_id = s.id
+      WHERE s.batch_id = ? AND r.status = 'PENDING_CLASS_IN_CHARGE'
+    `).get(fac.class_in_charge_batch_id).count;
+
+    const pendingClassLeaveCount = db.prepare(`
+      SELECT count(*) as count
+      FROM leave_requests l
+      JOIN students s ON l.student_id = s.id
+      WHERE s.batch_id = ? AND l.status = 'PENDING_CLASS_IN_CHARGE'
+    `).get(fac.class_in_charge_batch_id).count;
+
+    classInChargeInfo = {
+      batchId: fac.class_in_charge_batch_id,
+      batchName: batch?.name || '',
+      yearLevel: batch?.year_level || 0,
+      semester: batch?.semester || 0,
+      sectionId: fac.class_in_charge_section_id,
+      sectionName: sec?.name || 'A',
+      pendingClassOdCount,
+      pendingClassLeaveCount,
+      totalPendingRequests: pendingClassOdCount + pendingClassLeaveCount
+    };
+  }
+
   res.json({
     faculty: fac,
     todayDate: reqDate,
@@ -112,13 +152,14 @@ router.get('/:id/dashboard', authenticateToken, (req, res) => {
     completedToday,
     pendingToday,
     totalOdAlerts,
-    classes: enrichedClasses
+    classes: enrichedClasses,
+    classInChargeInfo
   });
 });
 
 // 3. Add faculty (HOD)
 router.post('/', authenticateToken, requireRole('hod'), (req, res) => {
-  const { faculty_id, full_name, designation, email, phone, room_no } = req.body;
+  const { faculty_id, full_name, designation, email, phone, room_no, class_in_charge_batch_id, class_in_charge_section_id } = req.body;
 
   if (!faculty_id || !full_name || !designation || !email) {
     return res.status(400).json({ error: 'Missing required faculty fields.' });
@@ -143,9 +184,19 @@ router.post('/', authenticateToken, requireRole('hod'), (req, res) => {
     `).run(username, passHash, full_name.trim(), email.trim(), phone || null);
 
     const fRes = db.prepare(`
-      INSERT INTO faculty (user_id, faculty_id, full_name, designation, email, phone, room_no, is_hod)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    `).run(uRes.lastInsertRowid, faculty_id.trim(), full_name.trim(), designation.trim(), email.trim(), phone || null, room_no || 'IT-Staff');
+      INSERT INTO faculty (user_id, faculty_id, full_name, designation, email, phone, room_no, is_hod, class_in_charge_batch_id, class_in_charge_section_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    `).run(
+      uRes.lastInsertRowid,
+      faculty_id.trim(),
+      full_name.trim(),
+      designation.trim(),
+      email.trim(),
+      phone || null,
+      room_no || 'IT-Staff',
+      class_in_charge_batch_id ? parseInt(class_in_charge_batch_id, 10) : null,
+      class_in_charge_section_id ? parseInt(class_in_charge_section_id, 10) : null
+    );
 
     logAudit({
       userId: req.user.id,
@@ -175,7 +226,7 @@ router.post('/', authenticateToken, requireRole('hod'), (req, res) => {
 // 4. Update faculty (HOD)
 router.put('/:id', authenticateToken, requireRole('hod'), (req, res) => {
   const facId = req.params.id;
-  const { full_name, designation, email, phone, room_no } = req.body;
+  const { full_name, designation, email, phone, room_no, class_in_charge_batch_id, class_in_charge_section_id } = req.body;
 
   const db = getDb();
   const fac = db.prepare('SELECT * FROM faculty WHERE id = ?').get(facId);
@@ -186,15 +237,33 @@ router.put('/:id', authenticateToken, requireRole('hod'), (req, res) => {
   db.exec('BEGIN TRANSACTION;');
 
   try {
+    const updatedBatchId = class_in_charge_batch_id !== undefined
+      ? (class_in_charge_batch_id ? parseInt(class_in_charge_batch_id, 10) : null)
+      : fac.class_in_charge_batch_id;
+    const updatedSectionId = class_in_charge_section_id !== undefined
+      ? (class_in_charge_section_id ? parseInt(class_in_charge_section_id, 10) : null)
+      : fac.class_in_charge_section_id;
+
     db.prepare(`
       UPDATE faculty
       SET full_name = COALESCE(?, full_name),
           designation = COALESCE(?, designation),
           email = COALESCE(?, email),
           phone = COALESCE(?, phone),
-          room_no = COALESCE(?, room_no)
+          room_no = COALESCE(?, room_no),
+          class_in_charge_batch_id = ?,
+          class_in_charge_section_id = ?
       WHERE id = ?
-    `).run(full_name, designation, email, phone, room_no, facId);
+    `).run(
+      full_name,
+      designation,
+      email,
+      phone,
+      room_no,
+      updatedBatchId,
+      updatedSectionId,
+      facId
+    );
 
     if (full_name || email || phone) {
       db.prepare(`

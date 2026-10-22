@@ -14,7 +14,9 @@ import {
   Sparkles,
   BookOpen,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  CheckSquare,
+  Download
 } from 'lucide-react';
 
 interface HodDashboardProps {
@@ -103,6 +105,15 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onNavigate }) => {
           </div>
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => onNavigate('take-attendance')}
+              className="btn btn-primary"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', borderColor: '#10b981', color: '#fff', fontWeight: 600 }}
+              title="Take attendance for your teaching classes"
+            >
+              <CheckSquare size={16} />
+              <span>Take Attendance</span>
+            </button>
             <button
               onClick={() => onNavigate('hod-od-approvals')}
               className="btn btn-primary"
@@ -277,6 +288,26 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onNavigate }) => {
 
             <div style={{ marginTop: 20, padding: 14, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.825rem', color: '#475569' }}>
               Anna University R2021 Regulation strictly requires a minimum of 75.0% attendance to be eligible for end-semester examinations. Currently, {kpis.criticalCount} student(s) require intervention or mentor counseling.
+            </div>
+
+            <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => onNavigate('hod-reports')}
+                className="btn btn-primary"
+                style={{ flex: 1, padding: '10px 14px', fontSize: '0.82rem', background: 'linear-gradient(135deg, #b91c1c, #991421)', borderColor: '#991421' }}
+              >
+                <AlertCircle size={15} />
+                <span>Dispatch Parent Defaulter Notices ({kpis.criticalCount})</span>
+              </button>
+              <button
+                onClick={() => onNavigate('hod-reports')}
+                className="btn btn-outline"
+                style={{ padding: '10px 14px', fontSize: '0.82rem' }}
+                title="Download formatted Anna University Web Portal sheet"
+              >
+                <Download size={15} />
+                <span>COE Export</span>
+              </button>
             </div>
           </div>
         </div>

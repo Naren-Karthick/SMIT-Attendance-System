@@ -88,12 +88,22 @@ router.post('/apply', authenticateToken, async (req, res) => {
     }
   }
 
+  // Get student's batch and section to identify Class In-Charge
+  const studentInfo = db.prepare('SELECT batch_id, section_id FROM students WHERE id = ?').get(req.user.studentId);
+  const classInCharge = studentInfo ? db.prepare(`
+    SELECT f.*, u.id as in_charge_user_id
+    FROM faculty f
+    JOIN users u ON f.user_id = u.id
+    WHERE f.class_in_charge_batch_id = ?
+    LIMIT 1
+  `).get(studentInfo.batch_id) : null;
+
   db.prepare(`
     INSERT INTO od_requests (
       request_number, student_id, od_type, event_name, venue, from_date, to_date,
       from_period, to_period, description, remarks, evidence_url, evidence_name,
       evidence_type, evidence_size, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING_CLASS_IN_CHARGE')
   `).run(
     requestNumber,
     req.user.studentId,
@@ -127,16 +137,26 @@ router.post('/apply', authenticateToken, async (req, res) => {
     ipAddress: req.ip
   });
 
-  // Notify HOD
-  const hodUser = db.prepare("SELECT id FROM users WHERE role = 'hod' LIMIT 1").get();
-  if (hodUser) {
+  // Notify Class In-Charge if assigned, otherwise notify HOD
+  if (classInCharge) {
     sendNotification({
-      userId: hodUser.id,
-      title: `New OD Request: ${req.user.full_name}`,
-      message: `${req.user.full_name} (${req.user.registerNumber}) applied for OD for "${event_name}".`,
+      userId: classInCharge.in_charge_user_id,
+      title: `Class In-Charge OD Review: ${req.user.full_name}`,
+      message: `${req.user.full_name} (${req.user.registerNumber}) applied for OD for "${event_name}". Please verify and endorse for HOD approval.`,
       type: 'request',
-      linkUrl: '/hod/approvals?tab=od'
+      linkUrl: '/faculty/class-requests?tab=od'
     });
+  } else {
+    const hodUser = db.prepare("SELECT id FROM users WHERE role = 'hod' LIMIT 1").get();
+    if (hodUser) {
+      sendNotification({
+        userId: hodUser.id,
+        title: `New OD Request: ${req.user.full_name}`,
+        message: `${req.user.full_name} (${req.user.registerNumber}) applied for OD for "${event_name}".`,
+        type: 'request',
+        linkUrl: '/hod/approvals?tab=od'
+      });
+    }
   }
 
   // Persist snapshot to Vercel Blob storage
@@ -151,7 +171,7 @@ router.post('/apply', authenticateToken, async (req, res) => {
   res.status(201).json({
     success: true,
     requestId: requestNumber,
-    message: `OD request ${requestNumber} submitted successfully and sent for HOD review.`
+    message: `OD request ${requestNumber} submitted successfully and routed to Class In-Charge for endorsement.`
   });
 });
 
@@ -163,9 +183,12 @@ router.get('/my-requests', authenticateToken, (req, res) => {
 
   const db = getDb();
   const requests = db.prepare(`
-    SELECT r.*, u.full_name as reviewer_name
+    SELECT r.*,
+           u_hod.full_name as reviewer_name,
+           u_ic.full_name as in_charge_reviewer_name
     FROM od_requests r
-    LEFT JOIN users u ON r.reviewed_by = u.id
+    LEFT JOIN users u_hod ON r.reviewed_by = u_hod.id
+    LEFT JOIN users u_ic ON r.in_charge_reviewed_by = u_ic.id
     WHERE r.student_id = ?
     ORDER BY r.created_at DESC
   `).all(req.user.studentId);
@@ -173,26 +196,53 @@ router.get('/my-requests', authenticateToken, (req, res) => {
   res.json({ requests });
 });
 
-// 3. All OD requests (HOD / Faculty view)
+// 3. All OD requests (HOD / Faculty / Class In-Charge view)
 router.get('/all', authenticateToken, requireRole('hod', 'faculty'), (req, res) => {
-  const { status, year_level, search, page = 1, limit = 50 } = req.query;
+  const { status, year_level, batch_id, scope, search, page = 1, limit = 50 } = req.query;
   const db = getDb();
 
   let query = `
-    SELECT r.*, s.register_number, s.full_name as student_name, s.year_level, s.semester,
-           b.name as batch_name, rev.full_name as reviewer_name
+    SELECT r.*, s.register_number, s.full_name as student_name, s.year_level, s.semester, s.batch_id,
+           b.name as batch_name,
+           rev.full_name as reviewer_name,
+           ic_rev.full_name as in_charge_reviewer_name
     FROM od_requests r
     JOIN students s ON r.student_id = s.id
     JOIN batches b ON s.batch_id = b.id
     LEFT JOIN users rev ON r.reviewed_by = rev.id
+    LEFT JOIN users ic_rev ON r.in_charge_reviewed_by = ic_rev.id
     WHERE 1=1
   `;
   const params = [];
 
-  if (status && status !== 'ALL') {
-    query += ' AND r.status = ?';
-    params.push(status);
+  // If scope is 'class_in_charge', filter to classes assigned to logged-in faculty
+  if (scope === 'class_in_charge' && req.user.role === 'faculty') {
+    const fac = db.prepare('SELECT class_in_charge_batch_id FROM faculty WHERE user_id = ?').get(req.user.id);
+    if (fac && fac.class_in_charge_batch_id) {
+      query += ' AND s.batch_id = ?';
+      params.push(fac.class_in_charge_batch_id);
+    } else {
+      // Not a class in-charge of any class
+      return res.json({ requests: [], isClassInCharge: false });
+    }
   }
+
+  if (batch_id) {
+    query += ' AND s.batch_id = ?';
+    params.push(batch_id);
+  }
+
+  if (status && status !== 'ALL') {
+    if (status === 'PENDING') {
+      // HOD pending queue only shows requests endorsed by Class In-Charge (PENDING_HOD)
+      // or legacy PENDING
+      query += " AND r.status IN ('PENDING_HOD', 'PENDING')";
+    } else {
+      query += ' AND r.status = ?';
+      params.push(status);
+    }
+  }
+
   if (year_level) {
     query += ' AND s.year_level = ?';
     params.push(year_level);
@@ -203,16 +253,116 @@ router.get('/all', authenticateToken, requireRole('hod', 'faculty'), (req, res) 
     params.push(s, s, s, s);
   }
 
-  query += " ORDER BY CASE WHEN r.status = 'PENDING' THEN 0 ELSE 1 END, r.created_at DESC";
+  query += " ORDER BY CASE WHEN r.status IN ('PENDING_CLASS_IN_CHARGE', 'PENDING_HOD', 'PENDING') THEN 0 ELSE 1 END, r.created_at DESC";
 
   const offset = (page - 1) * limit;
   query += ` LIMIT ${parseInt(limit, 10)} OFFSET ${offset}`;
 
   const requests = db.prepare(query).all(...params);
-  res.json({ requests });
+  res.json({ requests, isClassInCharge: true });
 });
 
-// 4. HOD Review (Approve / Reject / Clarify) with automatic attendance reconciliation!
+// Stage 1: Class In-Charge Review (Approve -> PENDING_HOD / Reject -> REJECTED_BY_IN_CHARGE)
+router.post('/:id/in-charge-review', authenticateToken, requireRole('faculty', 'hod'), async (req, res) => {
+  const requestId = req.params.id;
+  const { action, remarks } = req.body; // action: 'APPROVE', 'REJECT'
+
+  if (!action || !['APPROVE', 'REJECT'].includes(action)) {
+    return res.status(400).json({ error: 'Valid action (APPROVE, REJECT) required.' });
+  }
+
+  const db = getDb();
+  const od = db.prepare(`
+    SELECT r.*, s.user_id as student_user_id, s.register_number, s.full_name as student_name, s.batch_id
+    FROM od_requests r
+    JOIN students s ON r.student_id = s.id
+    WHERE r.id = ? OR r.request_number = ?
+  `).get(requestId, requestId);
+
+  if (!od) {
+    return res.status(404).json({ error: 'OD request not found.' });
+  }
+
+  const newStatus = action === 'APPROVE' ? 'PENDING_HOD' : 'REJECTED_BY_IN_CHARGE';
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  db.exec('BEGIN TRANSACTION;');
+
+  try {
+    db.prepare(`
+      UPDATE od_requests
+      SET status = ?, in_charge_remarks = ?, in_charge_reviewed_by = ?, in_charge_reviewed_at = ?, updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `).run(newStatus, remarks || null, req.user.id, now, od.id);
+
+    logAudit({
+      userId: req.user.id,
+      userName: req.user.full_name,
+      role: req.user.role,
+      action: action === 'APPROVE' ? 'OD_IN_CHARGE_APPROVAL' : 'OD_IN_CHARGE_REJECTION',
+      entity: 'od_request',
+      entityId: od.request_number,
+      previousValue: od.status,
+      newValue: newStatus,
+      reason: remarks || `Endorsed by Class In-Charge`,
+      ipAddress: req.ip
+    });
+
+    if (action === 'APPROVE') {
+      // Notify HOD
+      const hodUser = db.prepare("SELECT id FROM users WHERE role = 'hod' LIMIT 1").get();
+      if (hodUser) {
+        sendNotification({
+          userId: hodUser.id,
+          title: `Endorsed OD Request: ${od.student_name}`,
+          message: `${od.student_name} (${od.register_number}) OD was verified & endorsed by Class In-Charge. Awaiting your final sign-off.`,
+          type: 'request',
+          linkUrl: '/hod/approvals?tab=od'
+        });
+      }
+      // Notify student
+      sendNotification({
+        userId: od.student_user_id,
+        title: 'OD Endorsed by Class In-Charge',
+        message: `Your OD request (${od.request_number}) was approved by your Class In-Charge and forwarded to the HOD for final approval.`,
+        type: 'request',
+        linkUrl: '/student/od-requests'
+      });
+    } else {
+      // Notify student of rejection
+      sendNotification({
+        userId: od.student_user_id,
+        title: 'OD Request Rejected by Class In-Charge',
+        message: `Your OD request (${od.request_number}) was rejected by your Class In-Charge. Reason: ${remarks || 'None'}`,
+        type: 'request',
+        linkUrl: '/student/od-requests'
+      });
+    }
+
+    db.exec('COMMIT;');
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await backupDatabaseToVercel(getDbPath());
+      } catch (e) {
+        console.error('[OD In-Charge Review] Cloud backup notice:', e.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      status: newStatus,
+      message: action === 'APPROVE'
+        ? 'OD request approved and forwarded to HOD for final sign-off.'
+        : 'OD request rejected and marked as REJECTED_BY_IN_CHARGE.'
+    });
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stage 2: HOD Review (Approve / Reject / Clarify) with automatic attendance reconciliation!
 router.post('/:id/review', authenticateToken, requireRole('hod'), async (req, res) => {
   const requestId = req.params.id;
   const { action, hod_remarks } = req.body; // action: 'APPROVE', 'REJECT', 'CLARIFY'

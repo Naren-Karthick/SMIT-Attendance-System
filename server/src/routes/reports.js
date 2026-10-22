@@ -137,6 +137,107 @@ router.get('/generate', authenticateToken, requireRole('hod', 'faculty'), (req, 
     });
   }
 
+  if (type === 'anna_univ_coe') {
+    let studentQuery = `
+      SELECT s.id, s.register_number, s.full_name, s.year_level, s.semester, b.name as batch_name
+      FROM students s
+      JOIN batches b ON s.batch_id = b.id
+      WHERE s.is_active = 1
+    `;
+    const params = [];
+    if (year_level) {
+      studentQuery += ' AND s.year_level = ?';
+      params.push(year_level);
+    }
+    studentQuery += ' ORDER BY s.register_number ASC';
+
+    const students = db.prepare(studentQuery).all(...params);
+
+    const reportRows = students.map((st, idx) => {
+      let recordsQuery = `
+        SELECT ar.status
+        FROM attendance_records ar
+        JOIN attendance_sessions ses ON ar.session_id = ses.id
+        WHERE ar.student_id = ?
+      `;
+      const recParams = [st.id];
+      if (from_date && to_date) {
+        recordsQuery += ' AND ses.session_date BETWEEN ? AND ?';
+        recParams.push(from_date, to_date);
+      }
+      const records = db.prepare(recordsQuery).all(...recParams);
+      const metrics = calculateAttendanceMetrics(records, policy);
+
+      const isEligible = metrics.percentage >= 75;
+      const isCondonation = metrics.percentage >= 65 && metrics.percentage < 75;
+
+      return {
+        slNo: idx + 1,
+        annaUnivRegNo: st.register_number,
+        studentName: st.full_name,
+        branch: 'B.Tech - Information Technology',
+        sem: st.semester,
+        totalPeriodsHeld: metrics.totalClassesConducted,
+        periodsAttended: metrics.attendedHours,
+        calculatedPercentage: `${metrics.percentage}%`,
+        coeExamEligibility: isEligible ? 'ELIGIBLE' : (isCondonation ? 'CONDONATION PERMITTED' : 'DETAINED / NOT ELIGIBLE'),
+        naacCriterionRef: 'Criterion 2.6.2'
+      };
+    });
+
+    return res.json({
+      title: 'Anna University COE Portal Export & NAAC Compliance Sheet',
+      generatedAt: new Date().toLocaleString(),
+      filters: { year_level, from_date, to_date },
+      totalRecords: reportRows.length,
+      rows: reportRows
+    });
+  }
+
+  if (type === 'parent_defaulter') {
+    const studentQuery = `
+      SELECT s.id, s.register_number, s.full_name, s.year_level, s.semester, s.parent_phone, b.name as batch_name
+      FROM students s
+      JOIN batches b ON s.batch_id = b.id
+      WHERE s.is_active = 1
+      ORDER BY s.register_number ASC
+    `;
+    const students = db.prepare(studentQuery).all();
+
+    const defaulters = [];
+    for (const st of students) {
+      const records = db.prepare(`
+        SELECT ar.status
+        FROM attendance_records ar
+        WHERE ar.student_id = ?
+      `).all(st.id);
+      const metrics = calculateAttendanceMetrics(records, policy);
+
+      if (metrics.percentage < 75 && metrics.totalClassesConducted > 0) {
+        defaulters.push({
+          registerNumber: st.register_number,
+          studentName: st.full_name,
+          batch: st.batch_name,
+          parentContact: st.parent_phone || '+91 98401 23456',
+          totalClasses: metrics.totalClassesConducted,
+          attended: metrics.attendedHours,
+          absentHours: metrics.absent,
+          currentPercentage: `${metrics.percentage}%`,
+          shortageMargin: `${(75 - metrics.percentage).toFixed(1)}%`,
+          hoursToRecover: metrics.classesNeededToRecover,
+          officialNoticeStatus: 'DISPATCH READY (SMS/POST)'
+        });
+      }
+    }
+
+    return res.json({
+      title: 'Parent Intimation & Attendance Shortage Defaulter List (< 75%)',
+      generatedAt: new Date().toLocaleString(),
+      totalRecords: defaulters.length,
+      rows: defaulters
+    });
+  }
+
   res.status(400).json({ error: 'Invalid report type requested.' });
 });
 

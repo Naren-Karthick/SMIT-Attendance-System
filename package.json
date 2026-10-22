@@ -7,7 +7,9 @@
     "build": "npm --prefix client install && npm --prefix client run build",
     "start": "node server/src/index.js",
     "server": "node server/src/index.js",
-    "client": "npm --prefix client run dev"
+    "client": "npm --prefix client run dev",
+    "dev": "npm --prefix client run dev",
+    "dev:all": "node server/src/index.js"
   },
   "engines": {
     "node": ">=22.x"

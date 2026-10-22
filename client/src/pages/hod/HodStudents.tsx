@@ -278,8 +278,8 @@ export const HodStudents: React.FC = () => {
         </div>
       </div>
 
-      {/* Students Data Table */}
-      <div className="card">
+      {/* Students Data Table with Contained Scrolling */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#64748b' }}>Loading student directory...</div>
         ) : students.length === 0 ? (
@@ -288,19 +288,28 @@ export const HodStudents: React.FC = () => {
             description="Try changing the search query or status filter."
           />
         ) : (
-          <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
-            <table className="table">
-              <thead>
+          <div
+            className="table-container"
+            style={{
+              border: 'none',
+              borderRadius: 0,
+              maxHeight: '65vh',
+              overflowY: 'auto',
+              position: 'relative'
+            }}
+          >
+            <table className="table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f8fafc', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                 <tr>
-                  <th style={{ width: 60 }}>#</th>
-                  <th>Register Number</th>
-                  <th>Student Name</th>
-                  <th>Year & Semester</th>
-                  <th>Batch</th>
-                  <th>Attendance %</th>
-                  <th>Compliance</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: 60, position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>#</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Register Number</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Student Name</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Year & Semester</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Batch</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Attendance %</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Compliance</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Status</th>
+                  <th style={{ textAlign: 'right', position: 'sticky', top: 0, background: '#f8fafc', zIndex: 11 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
