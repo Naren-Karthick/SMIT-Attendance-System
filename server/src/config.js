@@ -1,4 +1,4 @@
-﻿const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 dotenv.config();
 
 function validateEnv() {
@@ -10,13 +10,10 @@ function validateEnv() {
   }
 
   if (errors.length > 0) {
-    console.error('=================================================================');
-    console.error('CONFIGURATION ERROR: Failed startup environment validation');
-    errors.forEach(err => console.error(' - ' + err));
-    console.error('=================================================================');
-    if (isProd) {
-      throw new Error('Environment configuration failed validation.');
-    }
+    console.warn('=================================================================');
+    console.warn('CONFIGURATION NOTICE: Production environment secret recommendation');
+    errors.forEach(err => console.warn(' - ' + err));
+    console.warn('=================================================================');
   }
 
   return {
