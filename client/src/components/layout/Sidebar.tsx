@@ -54,6 +54,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         <CalendarDays size={18} />
         <span>Timetable</span>
       </button>
+      <button
+        className={`nav-link ${currentPage === 'student-passport' ? 'active' : ''}`}
+        onClick={() => onNavigate('student-passport')}
+      >
+        <ShieldCheck size={18} />
+        <span>Attendance Passport</span>
+      </button>
 
       <div className="nav-section-title">On-Duty (OD)</div>
       <button
@@ -151,12 +158,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         <span>Timetable</span>
       </button>
 
-      <div className="nav-section-title">Class In-Charge</div>
+      <div className="nav-section-title">Mentor & Class In-Charge</div>
+      <button
+        className={`nav-link ${currentPage === 'mentor-interventions' ? 'active' : ''}`}
+        onClick={() => onNavigate('mentor-interventions')}
+      >
+        <ShieldCheck size={18} />
+        <span>Mentor Interventions</span>
+      </button>
       <button
         className={`nav-link ${currentPage === 'faculty-class-requests' ? 'active' : ''}`}
         onClick={() => onNavigate('faculty-class-requests')}
       >
-        <ShieldCheck size={18} />
+        <FileCheck size={18} />
         <span>Class Requests (Stage 1)</span>
       </button>
 

@@ -346,6 +346,14 @@ function initSchema() {
   runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_remarks TEXT;');
   runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_reviewed_by INTEGER REFERENCES users(id);');
   runMigration('ALTER TABLE leave_requests ADD COLUMN in_charge_reviewed_at TEXT;');
+
+  // Automatic Phase 2 enterprise table migration
+  try {
+    const { runPhase2Migrations } = require('./migrations_phase2');
+    runPhase2Migrations();
+  } catch (err) {
+    console.error('[Schema Init] Phase 2 migration warning:', err.message);
+  }
 }
 
 function getDbPath() {

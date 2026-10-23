@@ -105,6 +105,11 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/storage', require('./routes/storage'));
+app.use('/api/evidence', require('./routes/evidence'));
+app.use('/api/interventions', require('./routes/interventions'));
+app.use('/api/appeals', require('./routes/appeals'));
+app.use('/api/passport', require('./routes/passport'));
+app.use('/api/qr', require('./routes/sessionQr'));
 
 // Serve Client in production
 const clientDistPath = path.resolve(__dirname, '../../client/dist');

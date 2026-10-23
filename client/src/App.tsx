@@ -16,6 +16,7 @@ import { StudentODRequests } from './pages/student/StudentODRequests';
 import { StudentApplyLeave } from './pages/student/StudentApplyLeave';
 import { StudentLeaveRequests } from './pages/student/StudentLeaveRequests';
 import { StudentTimetable } from './pages/student/StudentTimetable';
+import { StudentPassportPage } from './pages/student/StudentPassportPage';
 
 // Faculty Pages
 import { FacultyDashboard } from './pages/faculty/FacultyDashboard';
@@ -23,6 +24,7 @@ import { TakeAttendancePage } from './pages/faculty/TakeAttendancePage';
 import { FacultyClasses } from './pages/faculty/FacultyClasses';
 import { FacultyAttendanceHistory } from './pages/faculty/FacultyAttendanceHistory';
 import { FacultyClassRequests } from './pages/faculty/FacultyClassRequests';
+import { MentorInterventionInbox } from './pages/faculty/MentorInterventionInbox';
 
 // HOD Pages
 import { HodDashboard } from './pages/hod/HodDashboard';
@@ -112,12 +114,16 @@ function AppContent() {
         return <StudentLeaveRequests onNavigate={handleNavigate} />;
       case 'student-timetable':
         return <StudentTimetable />;
+      case 'student-passport':
+        return <StudentPassportPage />;
 
       // Faculty Routes
       case 'faculty-dashboard':
         return <FacultyDashboard onNavigate={handleNavigate} />;
       case 'take-attendance':
         return <TakeAttendancePage initialParams={pageParams} onNavigate={handleNavigate} />;
+      case 'mentor-interventions':
+        return <MentorInterventionInbox />;
       case 'faculty-classes':
         return <FacultyClasses onNavigate={handleNavigate} />;
       case 'faculty-attendance-history':
