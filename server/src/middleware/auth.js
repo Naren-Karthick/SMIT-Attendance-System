@@ -61,6 +61,7 @@ function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Session expired or invalid token. Please sign in again.' });
     }
 
+    const db = getDb();
     const user = db.prepare(`
       SELECT u.id, u.username, u.role, u.full_name, u.email, u.phone, u.avatar_url, u.is_active
       FROM users u
